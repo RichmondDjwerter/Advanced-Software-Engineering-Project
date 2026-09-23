@@ -6,8 +6,9 @@
 
 ## Installing and deploying project locally
 1. Git clone the project
-2. Run the following commands:
+2. Run the following commands at the root of the folder `my-app`:
     ```
+    npm install
     npm run build
     npm run start
     ```
