@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Ultron",
-  description: "Manuscript analysis and transcription tool",
+  description: "Historical manuscripts analysis and transcription tool.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
