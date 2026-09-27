@@ -1,5 +1,8 @@
-# Advanced-Software-Engineering-Project
+<img alt="ultron logo" src="ultron-app/public/ultron/logo.png" width=500/>
+
 ## Description
+Historical manuscripts analysis and transcription tool.
+
 ## Requirements
 - Node.js >= 26.8.2
 - npm >= 12.0.2
