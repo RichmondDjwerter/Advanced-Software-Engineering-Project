@@ -12,7 +12,7 @@ export default async function HistoricalRecordPage(
   const { id } = await props.params;
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-6 py-8">
+    <>
       <div className="flex items-center gap-3">
         <Link href="/historical-records">
           <Button variant="outline" size="icon" aria-label="Go Back">
@@ -32,7 +32,7 @@ export default async function HistoricalRecordPage(
 
         <Chat />
       </div>
-    </main>
+    </>
   );
 }
 
