@@ -1,0 +1,12 @@
+services:
+  ultron-postgres:
+    image: postgres:latest
+    container_name: ultron-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ultron
+      POSTGRES_USER: ultron
+      POSTGRES_HOST_AUTH_METHOD: trust # Allow connections without a password (for local/development use only!)
+      POSTGRES_HOST: localhost
+    ports:
+      - "5432:5432"
