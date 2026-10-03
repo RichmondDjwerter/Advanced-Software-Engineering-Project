@@ -19,7 +19,7 @@ SessionLocal = sessionmaker(
     autoflush=False,
     bind=engine,
 )
-
+ 
 
 class Base(DeclarativeBase):
     pass
