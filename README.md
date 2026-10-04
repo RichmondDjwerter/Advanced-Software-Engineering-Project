@@ -87,7 +87,7 @@ This command will build and start the application.
 ### 5. Access the application 
  Check if the server is running locally by following this URL: http://localhost:3000/
 
-## Frontend UI with shadcn/ui**
+## Frontend UI with shadcn/ui
 
 The frontend uses [shadcn/ui](https://ui.shadcn.com/) for UI components. When adding new features or pages, shadcn/ui components should be used wherever possible to keep the design consistent across the application.
 
