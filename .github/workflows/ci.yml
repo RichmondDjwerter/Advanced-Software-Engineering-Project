@@ -3,11 +3,98 @@ name: CI
 on:
   push:
   pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, dismissed]
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  pull-request-conventions:
+    name: Pull request conventions
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check title and description format
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { title, body = '' } = context.payload.pull_request;
+            const titlePattern = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)(\([a-z0-9._/-]+\))?: .{1,72}$/;
+            const errors = [];
+
+            if (!titlePattern.test(title)) {
+              errors.push('Use a title like `feat(api): add record search` or `fix: handle empty descriptions` (type, optional scope, colon, concise summary).');
+            }
+
+            const requiredSections = ['Summary', 'Changes', 'Testing', 'Review focus'];
+            for (const section of requiredSections) {
+              const heading = new RegExp(`^##\\s+${section}\\s*$`, 'im');
+              const match = heading.exec(body);
+              if (!match) {
+                errors.push(`Description is missing the \'## ${section}\' section.`);
+                continue;
+              }
+
+              const afterHeading = body.slice(match.index + match[0].length);
+              const nextHeading = /^##\s+/m.exec(afterHeading);
+              const content = (nextHeading ? afterHeading.slice(0, nextHeading.index) : afterHeading)
+                .replace(/<!--[\s\S]*?-->/g, '')
+                .trim();
+              if (!content || /^(todo|tbd|n\/?a|\[.*\])$/i.test(content)) {
+                errors.push(`Add meaningful text under \'## ${section}\'.`);
+              }
+            }
+
+            if (errors.length) {
+              core.setFailed(`Pull request convention check failed:\n- ${errors.join('\n- ')}`);
+            }
+
+  code-review:
+    name: Code review approval
+    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require an independent approval
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pullRequest = context.payload.pull_request;
+            const pullNumber = pullRequest.number;
+            const author = pullRequest.user.login;
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+            });
+
+            reviews.sort((left, right) =>
+              new Date(left.submitted_at) - new Date(right.submitted_at)
+            );
+
+            const latestReviewByUser = new Map();
+            for (const review of reviews) {
+              if (review.user && review.user.type !== 'Bot' && review.submitted_at) {
+                latestReviewByUser.set(review.user.login, {
+                  state: review.state,
+                  commit_id: review.commit_id,
+                });
+              }
+            }
+
+            const hasIndependentApproval = [...latestReviewByUser].some(
+              ([login, review]) =>
+                login !== author &&
+                review.state === 'APPROVED' &&
+                review.commit_id === pullRequest.head.sha
+            );
+
+            if (!hasIndependentApproval) {
+              core.setFailed('At least one human reviewer other than the pull request author must approve the latest changes.');
+            }
+
   backend:
     name: Backend
     runs-on: ubuntu-latest
