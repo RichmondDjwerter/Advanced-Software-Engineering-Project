@@ -35,6 +35,12 @@ class HistoricalRecordCreate(BaseModel):
     name: str
     description: str | None = None
 
+# Classes for Chat
+class ChatRequest(BaseModel):
+    message: str
+
+class ChatResponse(BaseModel):
+    response: str
 
 @app.get("/")
 def root():
@@ -81,6 +87,12 @@ def create_historical_record(
         "updated_at": new_record.updated_at.isoformat(),
     }
 
+# Chat Routes
+
+@app.post("/historical_records/{record_id}/chat", response_model=ChatResponse)
+def post_message(record_id: str, chat_request: ChatRequest):
+    """ Placeholder: returns message as an echo"""
+    return ChatResponse(response=f"ECHO: {chat_request.message}")
 
 if __name__ == "__main__":
     uvicorn.run(

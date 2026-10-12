@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000"
+export const API_URL = "http://localhost:8000"
 
 export async function getHistoricalRecords() {
   const res = await fetch(`${API_URL}/historical_records`)
