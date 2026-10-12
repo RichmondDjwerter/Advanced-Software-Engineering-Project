@@ -4,9 +4,15 @@ import { UploadButton } from "@/app/components/UploadButton";
 export default function HistoricalRecords() {
   return (
     <>
-      <h1 className="font-heading text-2xl font-medium tracking-tight">Historical Records</h1>
-
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-heading text-2xl font-medium tracking-tight">
+            Historical Records
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Browse your uploaded documents and open one to work with it.
+          </p>
+        </div>
         <UploadButton />
       </div>
 

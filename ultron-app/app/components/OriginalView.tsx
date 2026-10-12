@@ -6,8 +6,8 @@ export function OriginalView() {
       <CardHeader>
         <CardTitle>Original</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="flex h-72 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+      <CardContent className="flex-1">
+        <div className="flex h-full min-h-40 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           Image will go here
         </div>
       </CardContent>
