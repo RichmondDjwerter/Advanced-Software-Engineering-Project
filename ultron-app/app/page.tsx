@@ -24,35 +24,34 @@ const features = [
 
 export default function Home() {
   return (
-    <div
-      data-page="home"
-      className="flex flex-1 flex-col items-center gap-10 pt-12 text-center"
-    >
-      <div className="flex flex-col items-center gap-4">
-        <p className="text-sm font-medium tracking-widest text-muted-foreground">
-          Historical Documents
-        </p>
-        <h1 className="max-w-2xl font-heading text-4xl font-medium tracking-tight text-balance">
-          Explore, analyse and understand historical records
-        </h1>
-        <p className="max-w-xl text-muted-foreground text-pretty">
-          Ultron is a tool for working with historical documents. Upload a
-          document, translate its content and ask questions about the document
-          using the integrated assistant.
-        </p>
+    <div className="flex flex-1 flex-col items-center text-center">
+      <div className="flex flex-3 flex-col items-center justify-center gap-10 py-12">
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-sm font-medium tracking-widest text-muted-foreground">
+            Historical Documents
+          </p>
+          <h1 className="max-w-2xl font-heading text-4xl font-medium tracking-tight text-balance">
+            Explore, analyse and understand historical records
+          </h1>
+          <p className="max-w-xl text-muted-foreground text-pretty">
+            Ultron is a tool for working with historical documents. Upload a
+            document, translate its content and ask questions about the document
+            using the integrated assistant.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <UploadButton />
+          <Link
+            href="/historical-records"
+            className={buttonVariants({ variant: "ghost", size: "lg" })}
+          >
+            View Historical Records
+          </Link>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <UploadButton />
-        <Link
-          href="/historical-records"
-          className={buttonVariants({ variant: "ghost", size: "lg" })}
-        >
-          View Historical Records
-        </Link>
-      </div>
-
-      <div className="-mb-8 flex w-full flex-1 flex-col">
+      <div className="-mb-8 flex w-full flex-2 flex-col">
         <Separator className="self-center data-horizontal:w-screen" />
 
         <div className="flex w-screen flex-1 flex-col self-center py-10 sm:flex-row">

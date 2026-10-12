@@ -5,7 +5,7 @@ export default function Nav() {
   return (
     <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       <nav
-        className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4 sm:px-8"
+        className="flex w-full items-center justify-between px-6 py-4 sm:px-10 lg:px-16 2xl:px-24"
         aria-label="Main navigation"
       >
         <Link
