@@ -1,4 +1,4 @@
-import {API_URL} from "@/app/lib/api"
+import { API_URL } from "@/app/lib/api"
 
 /**
  * HTTP layer for the chat. Sends requests to the FastAPI backend.

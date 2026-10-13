@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-
-const API_URL = "http://localhost:8000"
+import { API_URL } from "@/app/lib/api"
 
 export async function GET() {
   const res = await fetch(`${API_URL}/historical_records`)

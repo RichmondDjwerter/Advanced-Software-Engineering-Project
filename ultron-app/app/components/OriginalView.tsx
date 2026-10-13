@@ -1,8 +1,9 @@
 "use client";
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageWithZoom } from "@/app/components/ImageWithZoom";
 import { useEffect, useState } from "react";
+import { API_URL } from "@/app/lib/api";
 
 type OriginalViewProps = {
   id: string;
@@ -15,11 +16,13 @@ export function OriginalView({ id }: OriginalViewProps) {
   useEffect(() => {
     setImageNotFound(false);
     setImageName(null);
+    const controller = new AbortController();
 
     const fetchHistoricalRecord = async () => {
       try {
         const response = await fetch(
-          `http://localhost:8000/historical_records/${encodeURIComponent(id)}`,
+          `${API_URL}/historical_records/${encodeURIComponent(id)}`,
+          { signal: controller.signal },
         );
 
         if (!response.ok) {
@@ -35,28 +38,25 @@ export function OriginalView({ id }: OriginalViewProps) {
 
         setImageName(name.trim());
       } catch {
-        setImageNotFound(true);
+        if (!controller.signal.aborted) {
+          setImageNotFound(true);
+        }
       }
     };
 
     fetchHistoricalRecord();
-  }, [id]);
 
-  const imageUrl = imageName
-    ? imageName.startsWith("http://") || imageName.startsWith("https://")
-      ? imageName
-      : `http://localhost:8000/uploads/${imageName
-          .split("/")
-          .map((part: string) => encodeURIComponent(part))
-          .join("/")}`
-    : null;
+    return () => controller.abort();
+  }, [id]);
 
   return (
     <Card className="h-full">
       <CardHeader>
         <CardTitle>Original</CardTitle>
       </CardHeader>
-      <ImageWithZoom name={imageName || "Image not found"} />
+      <ImageWithZoom
+        name={imageNotFound ? "Image not found" : imageName || "Loading..."}
+      />
     </Card>
   );
 }
