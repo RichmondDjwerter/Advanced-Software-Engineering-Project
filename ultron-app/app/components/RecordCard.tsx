@@ -1,7 +1,8 @@
 // imports
 import Link from "next/link";
+import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent } from "@/components/ui/card";
-
+import { ImageWithZoom } from "@/app/components/ImageWithZoom";
 
 // Props the component gets from outside
 type Props = {
@@ -12,6 +13,9 @@ type Props = {
 }
 // Function: Component itself
 export function RecordCard({ id, name, description}: Props){
+    const [imageNotFound, setImageNotFound] = useState(false);
+    const [imageZoomed, setImageZoomed] = useState(false);
+
     return (
             <Card>
                 <CardHeader>
@@ -26,11 +30,7 @@ export function RecordCard({ id, name, description}: Props){
                         </Link>
                     </CardAction>
                 </CardHeader>
-                <CardContent>
-                    <div className="flex aspect-video items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                        Image will go here
-                    </div>
-                </CardContent>
+                <ImageWithZoom name={name} />
             </Card>
     )
 }

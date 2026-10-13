@@ -1,6 +1,7 @@
 import uvicorn
+from pathlib import Path
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -8,12 +9,17 @@ from sqlalchemy.orm import Session
 from database import Base, engine, get_db
 from models import HistoricalRecord
 
+from fastapi.staticfiles import StaticFiles
+
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI()
+
+UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # CORS configuration
@@ -29,7 +35,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 class HistoricalRecordCreate(BaseModel):
     name: str
@@ -46,6 +52,11 @@ class ChatResponse(BaseModel):
 def root():
     return {"message": "Historical Manuscripts API"}
 
+###############################
+# Historical Record Endpoints #
+###############################
+
+IMAGE_EXTENSIONS = {"image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp"}
 
 @app.get("/historical_records")
 def get_historical_records(
@@ -64,15 +75,40 @@ def get_historical_records(
         for record in records
     ]
 
-
-@app.post("/historical_records")
-def create_historical_record(
-    record: HistoricalRecordCreate,
+@app.get("/historical_records/{record_id}")
+def get_historical_record(
+    record_id: str,
     db: Session = Depends(get_db),
 ):
+    record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Historical record not found")
+
+    return {
+        "id": record.id,
+        "name": record.name,
+        "description": record.description,
+        "created_at": record.created_at.isoformat(),
+        "updated_at": record.updated_at.isoformat(),
+    }
+
+@app.post("/historical_records")
+async def create_historical_record(
+
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    if image.content_type not in IMAGE_EXTENSIONS:
+        raise HTTPException(status_code=415, detail="Invalid file type. Only image files are allowed.")
+    
+    filename = Path(image.filename or "Unnamed Record").name
+    file_path = UPLOAD_DIR / filename
+    file_path.write_bytes(await image.read())
+
     new_record = HistoricalRecord(
-        name=record.name,
-        description=record.description,
+        name=filename,
+        description="",
     )
 
     db.add(new_record)
