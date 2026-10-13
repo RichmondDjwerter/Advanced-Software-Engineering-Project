@@ -26,7 +26,7 @@ export default async function HistoricalRecordPage(
 
       <div className="flex flex-1 flex-col justify-center gap-10 pb-20">
         <div className="grid gap-4 lg:grid-cols-2">
-          <OriginalView />
+          <OriginalView id={id} />
           <TranslationView />
         </div>
 
