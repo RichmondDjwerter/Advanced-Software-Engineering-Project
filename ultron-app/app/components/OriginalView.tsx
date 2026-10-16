@@ -12,10 +12,12 @@ type OriginalViewProps = {
 export function OriginalView({ id }: OriginalViewProps) {
   const [imageNotFound, setImageNotFound] = useState(false);
   const [imageName, setImageName] = useState<string | null>(null);
+  const [imageFilename, setImageFilename] = useState<string | null>(null);
 
   useEffect(() => {
     setImageNotFound(false);
     setImageName(null);
+    setImageFilename(null);
     const controller = new AbortController();
 
     const fetchHistoricalRecord = async () => {
@@ -31,12 +33,16 @@ export function OriginalView({ id }: OriginalViewProps) {
 
         const record = await response.json();
         const name = record.name;
+        const filename = record.image_filename;
 
         if (typeof name !== "string" || !name.trim()) {
           throw new Error("Historical record has no original image");
         }
 
         setImageName(name.trim());
+        setImageFilename(
+          typeof filename === "string" && filename.trim() ? filename.trim() : null,
+        );
       } catch {
         if (!controller.signal.aborted) {
           setImageNotFound(true);
@@ -56,6 +62,7 @@ export function OriginalView({ id }: OriginalViewProps) {
       </CardHeader>
       <ImageWithZoom
         name={imageNotFound ? "Image not found" : imageName || "Loading..."}
+        imageFilename={imageFilename}
       />
     </Card>
   );

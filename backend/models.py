@@ -38,3 +38,13 @@ class HistoricalRecord(Base):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+
+    image_filename: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        )
+
+    extracted_text: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        )

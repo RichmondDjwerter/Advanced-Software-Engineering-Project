@@ -9,10 +9,11 @@ type Props = {
     id: string;
     name: string;
     description: string | null;
+    imageFilename: string | null;
 
 }
 // Function: Component itself
-export function RecordCard({ id, name, description}: Props){
+export function RecordCard({ id, name, description, imageFilename }: Props) {
     return (
             <Card>
                 <CardHeader>

@@ -8,6 +8,7 @@ type HistoricalRecord = {
   id: string | number;
   name: string;
   description: string;
+  image_filename: string | null;
 };
 
 export default function HistoricalRecords() {
@@ -44,11 +45,12 @@ export default function HistoricalRecords() {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {records.map((record) => (
           <RecordCard
-            key={record.id}
-            id={String(record.id)}
-            name={record.name}
-            description={record.description}
-          />
+          key={record.id}
+          id={String(record.id)}
+          name={record.name}
+          description={record.description}
+          imageFilename={record.image_filename}
+/>
         ))}
       </div>
     </>

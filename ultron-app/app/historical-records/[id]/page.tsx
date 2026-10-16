@@ -4,12 +4,16 @@ import { TranslationView } from "@/app/components/TranslationView";
 import { Chat } from "@/app/components/Chat";
 import { Button } from "@/components/ui/button"; 
 import { ArrowLeftIcon } from "lucide-react";
+import { TranscriptionView } from "@/app/components/TranscriptionView";
 
+type HistoricalRecordPageProps = {
+  params: Promise<{ id: string }>;
+};
 
-export default async function HistoricalRecordPage(
-  props: PageProps<"/historical-records/[id]">
-) {
-  const { id } = await props.params;
+export default async function HistoricalRecordPage({
+  params,
+}: HistoricalRecordPageProps) {
+  const { id } = await params;
 
   return (
     <>
@@ -29,7 +33,7 @@ export default async function HistoricalRecordPage(
           <OriginalView id={id} />
           <TranslationView />
         </div>
-
+        <TranscriptionView recordId={id} />
         <Chat recordId={id}/>
       </div>
     </>
