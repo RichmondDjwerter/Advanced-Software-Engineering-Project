@@ -9,33 +9,46 @@ type OriginalViewProps = {
   id: string;
 };
 
-
 export function OriginalView({ id }: OriginalViewProps) {
-  const [imageNotFound, setImageNotFound] = useState(false);
+  const [record, setRecord] = useState<HistoricalRecord | null>(null);
 
-  const [record, setRecord] = useState<HistoricalRecord>({} as HistoricalRecord);
-  
   useEffect(() => {
+    const controller = new AbortController();
+
     const loadRecord = async () => {
-      const response = await fetch(`/api/historicalRecords?id=${id}`);
+      try {
+        const response = await fetch(
+          `/api/historicalRecords?id=${encodeURIComponent(id)}`,
+          { signal: controller.signal }
+        );
 
-      if (!response.ok) {
-        throw new Error("Failed to load historical records");
+        if (!response.ok) {
+          throw new Error("Failed to load historical record");
+        }
+
+        const data: HistoricalRecord = await response.json();
+        setRecord(data);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.error(error);
+        }
       }
-
-      setRecord(await response.json());
-      setImageNotFound(false);
     };
-    loadRecord().catch(console.error);
-  }, []);
+
+    loadRecord();
+
+    return () => controller.abort();
+  }, [id]);
 
   return (
     <Card className="h-full">
       <CardHeader>
         <CardTitle>Original</CardTitle>
       </CardHeader>
-      <ImageWithZoom id={id} name={imageNotFound ? "Image not found" : record.name || "Loading..."}
-      />
+
+      {record && (
+        <ImageWithZoom key={id} id={id} name={record.name}/>
+      )}
     </Card>
   );
 }

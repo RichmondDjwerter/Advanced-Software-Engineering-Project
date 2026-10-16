@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CardContent } from "@/components/ui/card";
 import { X } from "lucide-react";
+import Image from "next/image";
 
 // Props the component gets from outside
 type Props = {
@@ -12,11 +13,6 @@ type Props = {
 export function ImageWithZoom({ id, name }: Props) {
   const [imageNotFound, setImageNotFound] = useState(false);
   const [imageZoomed, setImageZoomed] = useState(false);
-
-  useEffect(() => {
-    setImageNotFound(false);
-    setImageZoomed(false);
-  }, [id, name]);
 
   return (
     <CardContent>
@@ -30,10 +26,13 @@ export function ImageWithZoom({ id, name }: Props) {
             onClick={() => setImageZoomed(true)}
             aria-label={`Zoom in on ${name}`}
           >
-            <img
+            <Image
               key={name}
               src={`/api/uploads?name=${encodeURIComponent(id)}.${name.split(".").pop()}`}
               alt={name}
+              width={0}
+              height={0}
+              sizes="100vw"
               className="h-full w-full rounded-lg object-contain"
               onError={() => setImageNotFound(true)}
             />
@@ -49,12 +48,15 @@ export function ImageWithZoom({ id, name }: Props) {
           aria-label={name}
           onClick={() => setImageZoomed(false)}
         >
-          <img
+          <Image
             key={name}
             src={`/api/uploads?name=${encodeURIComponent(id)}.${name.split(".").pop()}`}
             alt={name}
-            className="max-h-full max-w-full object-contain"
-            onClick={(event) => event.stopPropagation()}
+            width={0}
+            height={0}
+            sizes="100vw"
+            className="h-full w-full rounded-lg object-contain"
+            onError={() => setImageNotFound(true)}
           />
           <button
             type="button"

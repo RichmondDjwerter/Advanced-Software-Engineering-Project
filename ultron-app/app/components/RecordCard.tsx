@@ -26,7 +26,7 @@ export function RecordCard({ id, name, description}: Props){
                         </Link>
                     </CardAction>
                 </CardHeader>
-                <ImageWithZoom id={id} name={name} />
+                <ImageWithZoom key={`${id}-${name}`} id={id} name={name} />
             </Card>
     )
 }
