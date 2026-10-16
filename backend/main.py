@@ -52,10 +52,7 @@ class ChatResponse(BaseModel):
 def root():
     return {"message": "Historical Manuscripts API"}
 
-###############################
-# Historical Record Endpoints #
-###############################
-
+# Routes for Historical Records
 IMAGE_EXTENSIONS = {"image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp"}
 
 @app.get("/historical_records")
@@ -101,17 +98,19 @@ async def create_historical_record(
 ):
     if image.content_type not in IMAGE_EXTENSIONS:
         raise HTTPException(status_code=415, detail="Invalid file type. Only image files are allowed.")
-    
-    filename = Path(image.filename or "Unnamed Record").name
-    file_path = UPLOAD_DIR / filename
-    file_path.write_bytes(await image.read())
 
+    filename = Path(image.filename or "Unnamed Record").name
     new_record = HistoricalRecord(
         name=filename,
         description="",
     )
 
     db.add(new_record)
+    db.flush()
+
+    file_path = UPLOAD_DIR / f"{new_record.id}{Path(filename).suffix}"
+    file_path.write_bytes(await image.read())
+
     db.commit()
     db.refresh(new_record)
 

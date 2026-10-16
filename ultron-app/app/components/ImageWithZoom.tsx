@@ -1,15 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CardContent } from "@/components/ui/card";
+import { X } from "lucide-react";
 
 // Props the component gets from outside
 type Props = {
+  id: string;
   name: string;
 };
 
 // Function: Component itself
-export function ImageWithZoom({ name }: Props) {
+export function ImageWithZoom({ id, name }: Props) {
   const [imageNotFound, setImageNotFound] = useState(false);
   const [imageZoomed, setImageZoomed] = useState(false);
+
+  useEffect(() => {
+    setImageNotFound(false);
+    setImageZoomed(false);
+  }, [id, name]);
 
   return (
     <CardContent>
@@ -24,7 +31,8 @@ export function ImageWithZoom({ name }: Props) {
             aria-label={`Zoom in on ${name}`}
           >
             <img
-              src={`http://localhost:8000/uploads/${encodeURIComponent(name)}`}
+              key={name}
+              src={`/api/uploads?name=${encodeURIComponent(id)}.${name.split(".").pop()}`}
               alt={name}
               className="h-full w-full rounded-lg object-contain"
               onError={() => setImageNotFound(true)}
@@ -42,17 +50,19 @@ export function ImageWithZoom({ name }: Props) {
           onClick={() => setImageZoomed(false)}
         >
           <img
-            src={`http://localhost:8000/uploads/${encodeURIComponent(name)}`}
+            key={name}
+            src={`/api/uploads?name=${encodeURIComponent(id)}.${name.split(".").pop()}`}
             alt={name}
             className="max-h-full max-w-full object-contain"
             onClick={(event) => event.stopPropagation()}
           />
           <button
             type="button"
-            className="absolute right-4 top-4 text-2xl text-white"
+            className="absolute top-5 right-6 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             onClick={() => setImageZoomed(false)}
             aria-label="Close zoomed image"
           >
+            <X className="h-5 w-5" />
           </button>
         </div>
       )}

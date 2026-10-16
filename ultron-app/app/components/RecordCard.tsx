@@ -1,6 +1,5 @@
 // imports
 import Link from "next/link";
-import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
 import { ImageWithZoom } from "@/app/components/ImageWithZoom";
 
@@ -27,7 +26,7 @@ export function RecordCard({ id, name, description}: Props){
                         </Link>
                     </CardAction>
                 </CardHeader>
-                <ImageWithZoom name={name} />
+                <ImageWithZoom id={id} name={name} />
             </Card>
     )
 }

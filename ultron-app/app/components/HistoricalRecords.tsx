@@ -1,31 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { RecordCard } from "@/app/components/RecordCard";
 import { UploadButton } from "@/app/components/UploadButton";
-
-type HistoricalRecord = {
-  id: string | number;
-  name: string;
-  description: string;
-};
+import { HistoricalRecord } from "@/app/types/historicalRecord";
 
 export default function HistoricalRecords() {
   const [records, setRecords] = useState<HistoricalRecord[]>([]);
 
-  useEffect(() => {
-    const loadRecords = async () => {
-      const response = await fetch("/api/historicalRecord");
+  const loadRecords = useCallback(async () => {
+    const response = await fetch("/api/historicalRecords");
 
-      if (!response.ok) {
-        throw new Error("Failed to load historical records");
-      }
+    if (!response.ok) {
+      throw new Error("Failed to load historical records");
+    }
 
-      setRecords(await response.json());
-    };
-
-    loadRecords().catch(console.error);
+    setRecords(await response.json());
   }, []);
+
+  useEffect(() => {
+    loadRecords().catch(console.error);
+  }, [loadRecords]);
 
   return (
     <>
@@ -38,18 +33,28 @@ export default function HistoricalRecords() {
             Browse your uploaded documents and open one to work with it.
           </p>
         </div>
-        <UploadButton />
+        <UploadButton onUploadSuccess={loadRecords}/>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {records.map((record) => (
+        { records.length === 0 ? (
+          <div className="col-span-full flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-10 text-center shadow-sm">
+            <p className="text-base font-medium text-foreground">
+              No historical records found
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Please upload an image to get started.
+            </p>
+          </div>
+        ) : (
+        records.map((record) => (
           <RecordCard
             key={record.id}
             id={String(record.id)}
             name={record.name}
             description={record.description}
           />
-        ))}
+        )))}
       </div>
     </>
   );

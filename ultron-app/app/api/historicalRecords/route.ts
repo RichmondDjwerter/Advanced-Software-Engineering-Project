@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server"
 import { API_URL } from "@/app/lib/api"
 
-export async function GET() {
-  const res = await fetch(`${API_URL}/historical_records`)
+export async function GET(request: Request) {
+  const id = new URL(request.url).searchParams.get("id")
+  const url = id
+    ? `${API_URL}/historical_records/${encodeURIComponent(id)}`
+    : `${API_URL}/historical_records`
+  const res = await fetch(url)
   if (!res.ok) {
     return NextResponse.json(
       { error: "Failed to fetch historical records" },

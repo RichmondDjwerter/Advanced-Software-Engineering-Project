@@ -3,59 +3,38 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageWithZoom } from "@/app/components/ImageWithZoom";
 import { useEffect, useState } from "react";
-import { API_URL } from "@/app/lib/api";
+import { HistoricalRecord } from "@/app/types/historicalRecord";
 
 type OriginalViewProps = {
   id: string;
 };
 
+
 export function OriginalView({ id }: OriginalViewProps) {
   const [imageNotFound, setImageNotFound] = useState(false);
-  const [imageName, setImageName] = useState<string | null>(null);
 
+  const [record, setRecord] = useState<HistoricalRecord>({} as HistoricalRecord);
+  
   useEffect(() => {
-    setImageNotFound(false);
-    setImageName(null);
-    const controller = new AbortController();
+    const loadRecord = async () => {
+      const response = await fetch(`/api/historicalRecords?id=${id}`);
 
-    const fetchHistoricalRecord = async () => {
-      try {
-        const response = await fetch(
-          `${API_URL}/historical_records/${encodeURIComponent(id)}`,
-          { signal: controller.signal },
-        );
-
-        if (!response.ok) {
-          throw new Error("Historical record not found");
-        }
-
-        const record = await response.json();
-        const name = record.name;
-
-        if (typeof name !== "string" || !name.trim()) {
-          throw new Error("Historical record has no original image");
-        }
-
-        setImageName(name.trim());
-      } catch {
-        if (!controller.signal.aborted) {
-          setImageNotFound(true);
-        }
+      if (!response.ok) {
+        throw new Error("Failed to load historical records");
       }
+
+      setRecord(await response.json());
+      setImageNotFound(false);
     };
-
-    fetchHistoricalRecord();
-
-    return () => controller.abort();
-  }, [id]);
+    loadRecord().catch(console.error);
+  }, []);
 
   return (
     <Card className="h-full">
       <CardHeader>
         <CardTitle>Original</CardTitle>
       </CardHeader>
-      <ImageWithZoom
-        name={imageNotFound ? "Image not found" : imageName || "Loading..."}
+      <ImageWithZoom id={id} name={imageNotFound ? "Image not found" : record.name || "Loading..."}
       />
     </Card>
   );
