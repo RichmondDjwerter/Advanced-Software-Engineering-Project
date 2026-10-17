@@ -1,18 +1,20 @@
 from functools import lru_cache
 from io import BytesIO
+from pathlib import Path
 
+import numpy as np
 import torch
 from PIL import Image, ImageOps
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
-from pathlib import Path
 
 
+# Line crops are written here for debugging (folder is git-ignored).
 debug_dir = Path("debug_ocr_lines")
-debug_dir.mkdir(exist_ok=True)
 
-# I chose this model because to train on medieval cursive handwriting, 
-# which is similar to the handwriting in the historical records.
-MODEL_ID = "medieval-data/trocr-medieval-cursiva"
+# General medieval model, fine-tuned on all scripts of CATMuS Medieval.
+# Benchmarked by the team on 300 CATMuS test lines: about 19 % CER,
+# better than Qwen2-VL-2B (27 %). The "cursiva" variant only covers one script.
+MODEL_ID = "medieval-data/trocr-medieval-base"
 
 
 @lru_cache(maxsize=1)
@@ -32,63 +34,125 @@ def load_model():
     return processor, model, device
 
 
-def split_page_into_lines(image: Image.Image) -> list[Image.Image]:
-    """Approximate text-line crops using horizontal ink density."""
-    grayscale = ImageOps.grayscale(image)
-    width, height = grayscale.size
+# ---------------------------------------------------------------------------
+# Line segmentation
+#
+# Idea: count dark pixels on every row of the page. Text lines show up as
+# peaks in that count, the space between two lines as a valley. We find the
+# peaks, then cut the page at the lowest point between two neighbouring peaks.
+# Cutting at valleys (instead of waiting for a fully empty row) still works
+# when long letters or flourishes touch the next line.
+# ---------------------------------------------------------------------------
 
-    pixels = torch.frombuffer(
-        bytearray(grayscale.tobytes()),
-        dtype=torch.uint8,
-    )
-    ink = pixels.reshape(height, width) < 185
-    row_ink = ink.sum(dim=1).tolist()
+def _otsu_threshold(gray: np.ndarray) -> int:
+    """Grey level that best separates ink from background for this image."""
+    hist = np.bincount(gray.ravel(), minlength=256).astype(float)
+    prob = hist / hist.sum()
+    omega = np.cumsum(prob)
+    mu = np.cumsum(prob * np.arange(256))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        between = (mu[-1] * omega - mu) ** 2 / (omega * (1 - omega))
+    if np.all(np.isnan(between)):
+        return 0  # single grey level (blank image): nothing counts as ink
+    return int(np.nanargmax(between))
 
-    min_ink = max(2, int(width * 0.002))
-    active_rows = [
-        row for row, count in enumerate(row_ink)
-        if count >= min_ink
+
+def _smooth(values: np.ndarray, window: float) -> np.ndarray:
+    size = max(1, int(window)) | 1  # odd window size
+    return np.convolve(values, np.ones(size) / size, mode="same")
+
+
+def find_line_boxes(image: Image.Image) -> list[tuple[int, int, int, int]]:
+    """Return one (left, top, right, bottom) box per text line, top to bottom."""
+    gray = np.asarray(ImageOps.grayscale(image))
+    height, width = gray.shape
+
+    # 1. Ink = pixels darker than an image-specific threshold, so a yellow
+    #    parchment or uneven lighting is not mistaken for ink.
+    ink = gray < _otsu_threshold(gray)
+
+    # 2. Ignore a thin frame: page edges, shadows and rounded corners would
+    #    otherwise count as ink on every row and hide the gaps between lines.
+    frame_x, frame_y = int(width * 0.02), int(height * 0.01)
+    ink[:, :frame_x] = False
+    ink[:, width - frame_x:] = False
+    ink[:frame_y, :] = False
+    ink[height - frame_y:, :] = False
+
+    # 3. Dark pixels per row, smoothed. Lines = peaks, gaps = valleys.
+    profile = _smooth(ink.sum(axis=1).astype(float), height / 100)
+    if profile.max() == 0:
+        return []
+    min_peak = 0.15 * profile.max()
+
+    # 4. Typical distance between two lines, from the profile's periodicity.
+    centred = profile - profile.mean()
+    autocorr = np.correlate(centred, centred, mode="full")[height - 1:]
+    low, high = max(5, height // 60), max(10, height // 4)
+    spacing = low + int(np.argmax(autocorr[low:high]))
+
+    # 5. Peaks: local maxima, strongest first, at least 0.6 x spacing apart.
+    candidates = [
+        row for row in range(1, height - 1)
+        if profile[row] >= min_peak
+        and profile[row] >= profile[row - 1]
+        and profile[row] >= profile[row + 1]
     ]
+    peaks: list[int] = []
+    for row in sorted(candidates, key=lambda r: -profile[r]):
+        if all(abs(row - other) >= 0.6 * spacing for other in peaks):
+            peaks.append(row)
+    peaks.sort()
+    if not peaks:
+        return []
 
-    if not active_rows:
-        return [image]
+    # Two peaks with no real valley between them belong to the same line
+    # (for example the top and bottom of tall letters): keep only the stronger one.
+    merged = [peaks[0]]
+    for row in peaks[1:]:
+        previous = merged[-1]
+        valley = profile[previous:row].min()
+        if valley > 0.5 * min(profile[previous], profile[row]):
+            if profile[row] > profile[previous]:
+                merged[-1] = row
+        else:
+            merged.append(row)
+    peaks = merged
 
-    gap_tolerance = max(2, height // 250)
-    bands = []
-    start = previous = active_rows[0]
+    # 6. Cut between neighbouring peaks at the lowest point of the profile.
+    cuts = [max(0, peaks[0] - spacing // 2)]
+    for upper, lower in zip(peaks, peaks[1:]):
+        cuts.append(upper + int(np.argmin(profile[upper:lower])))
+    cuts.append(min(height, peaks[-1] + spacing // 2))
 
-    for row in active_rows[1:]:
-        if row - previous > gap_tolerance + 1:
-            bands.append((start, previous + 1))
-            start = row
-        previous = row
-
-    bands.append((start, previous + 1))
-
-    x_margin = max(4, width // 100)
-    y_margin = max(2, height // 300)
-    min_band_height = max(3, height // 250)
-    crops = []
-
-    for top, bottom in bands:
-        if bottom - top < min_band_height:
+    # 7. Each band becomes a box: keep the horizontal extent of its ink and
+    #    add a small vertical overlap so ascenders and descenders are kept.
+    overlap = int(0.15 * spacing)
+    pad_x = max(4, width // 100)
+    boxes = []
+    for top, bottom in zip(cuts, cuts[1:]):
+        columns = _smooth(ink[top:bottom].sum(axis=0).astype(float), width / 100)
+        used = np.nonzero(columns > 0.5)[0]
+        if used.size == 0:
             continue
+        boxes.append((
+            max(0, int(used[0]) - pad_x),
+            max(0, top - overlap),
+            min(width, int(used[-1]) + 1 + pad_x),
+            min(height, bottom + overlap),
+        ))
+    return boxes
 
-        band_ink = ink[top:bottom]
-        columns = band_ink.any(dim=0).nonzero().flatten()
 
-        if columns.numel() == 0:
-            continue
+def split_page_into_lines(image: Image.Image) -> list[Image.Image]:
+    """Cut a page image into one image per text line (whole image if none found)."""
+    boxes = find_line_boxes(image)
+    return [image.crop(box) for box in boxes] or [image]
 
-        left = max(0, int(columns[0]) - x_margin)
-        right = min(width, int(columns[-1]) + 1 + x_margin)
-        crop_top = max(0, top - y_margin)
-        crop_bottom = min(height, bottom + y_margin)
 
-        crops.append(image.crop((left, crop_top, right, crop_bottom)))
-
-    return crops or [image]
-
+# ---------------------------------------------------------------------------
+# Transcription
+# ---------------------------------------------------------------------------
 
 def transcribe_image(image_bytes: bytes) -> str:
     processor, model, device = load_model()
@@ -98,9 +162,17 @@ def transcribe_image(image_bytes: bytes) -> str:
 
     lines = split_page_into_lines(image)
     print(f"OCR found {len(lines)} line crops")
+
+    # Start each run with an empty debug folder so old crops do not mislead.
+    debug_dir.mkdir(exist_ok=True)
+    for old_crop in debug_dir.glob("line_*.png"):
+        old_crop.unlink()
+
     recognized_lines = []
 
-    for line in lines:
+    for index, line in enumerate(lines):
+        line.save(debug_dir / f"line_{index:02d}.png")
+
         pixel_values = processor(
             images=line,
             return_tensors="pt",
@@ -111,7 +183,7 @@ def transcribe_image(image_bytes: bytes) -> str:
                 pixel_values,
                 max_new_tokens=128,
                 num_beams=4,
-                no_repeat_ngram_size=4
+                no_repeat_ngram_size=4,
             )
 
         text = processor.batch_decode(
@@ -121,7 +193,5 @@ def transcribe_image(image_bytes: bytes) -> str:
 
         if text:
             recognized_lines.append(text)
-
-        line.save(debug_dir / f"line_{lines.index(line)}.png")
 
     return "\n".join(recognized_lines)
