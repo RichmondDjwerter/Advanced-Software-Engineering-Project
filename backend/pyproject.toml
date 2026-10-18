@@ -24,3 +24,6 @@ dependencies = [
 dev = [
     "jupyter>=1.1.1",
 ]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body", "fastapi.Header", "fastapi.File"]

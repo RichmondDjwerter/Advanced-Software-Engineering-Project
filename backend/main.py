@@ -1,16 +1,14 @@
-import uvicorn
 from pathlib import Path
 
-from fastapi import FastAPI, Depends, UploadFile, File, HTTPException
+import uvicorn
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database import Base, engine, get_db
 from models import HistoricalRecord
-
-from fastapi.staticfiles import StaticFiles
-
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
