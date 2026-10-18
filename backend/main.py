@@ -37,23 +37,29 @@ app.add_middleware(
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
+
 class HistoricalRecordCreate(BaseModel):
     name: str
     description: str | None = None
+
 
 # Classes for Chat
 class ChatRequest(BaseModel):
     message: str
 
+
 class ChatResponse(BaseModel):
     response: str
+
 
 @app.get("/")
 def root():
     return {"message": "Historical Manuscripts API"}
 
+
 # Routes for Historical Records
 IMAGE_EXTENSIONS = {"image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp"}
+
 
 @app.get("/historical_records")
 def get_historical_records(
@@ -71,6 +77,7 @@ def get_historical_records(
         }
         for record in records
     ]
+
 
 @app.get("/historical_records/{record_id}")
 def get_historical_record(
@@ -90,14 +97,16 @@ def get_historical_record(
         "updated_at": record.updated_at.isoformat(),
     }
 
+
 @app.post("/historical_records")
 async def create_historical_record(
-
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
     if image.content_type not in IMAGE_EXTENSIONS:
-        raise HTTPException(status_code=415, detail="Invalid file type. Only image files are allowed.")
+        raise HTTPException(
+            status_code=415, detail="Invalid file type. Only image files are allowed."
+        )
 
     filename = Path(image.filename or "Unnamed Record").name
     new_record = HistoricalRecord(
@@ -122,12 +131,15 @@ async def create_historical_record(
         "updated_at": new_record.updated_at.isoformat(),
     }
 
+
 # Chat Routes
+
 
 @app.post("/historical_records/{record_id}/chat", response_model=ChatResponse)
 def post_message(record_id: str, chat_request: ChatRequest):
-    """ Placeholder: returns message as an echo"""
+    """Placeholder: returns message as an echo"""
     return ChatResponse(response=f"ECHO: {chat_request.message}")
+
 
 if __name__ == "__main__":
     uvicorn.run(
