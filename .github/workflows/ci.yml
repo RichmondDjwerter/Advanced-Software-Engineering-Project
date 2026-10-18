@@ -115,6 +115,24 @@ jobs:
       - name: Install locked dependencies
         run: uv sync --frozen
 
+      - name: Check formatting
+        run: uv run --with ruff ruff format --check .
+
+      - name: Lint Python code
+        run: uv run --with ruff ruff check .
+
+      - name: Type-check Python code
+        run: uv run --with mypy mypy main.py database.py models.py
+
+      - name: Run Python tests
+        shell: bash
+        run: |
+          if find . -type f \( -name 'test_*.py' -o -name '*_test.py' \) | grep -q .; then
+            uv run --with pytest pytest -q
+          else
+            echo "No Python tests found; skipping pytest."
+          fi
+
       - name: Check Python syntax
         run: uv run python -m compileall -q main.py database.py models.py
 
@@ -138,8 +156,23 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Check formatting
+        run: npx prettier --check .
+
+      - name: Type-check TypeScript
+        run: npx tsc --noEmit
+
       - name: Run ESLint
         run: npm run lint
+
+      - name: Run front-end tests
+        shell: bash
+        run: |
+          if node -e "const pkg=require('./package.json'); process.exit(pkg.scripts && pkg.scripts.test ? 0 : 1)"; then
+            npm test -- --run
+          else
+            echo "No front-end test script configured; skipping tests."
+          fi
 
       - name: Build production app
         run: npm run build
