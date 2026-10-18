@@ -32,6 +32,7 @@ export function ImageWithZoom({ id, name }: Props) {
               width={0}
               height={0}
               sizes="100vw"
+              loading="eager"
               className="h-full w-full rounded-lg object-contain"
               onError={() => setImageNotFound(true)}
             />
@@ -54,6 +55,7 @@ export function ImageWithZoom({ id, name }: Props) {
             width={0}
             height={0}
             sizes="100vw"
+            loading="eager"
             className="h-full w-full rounded-lg object-contain"
             onError={() => setImageNotFound(true)}
           />

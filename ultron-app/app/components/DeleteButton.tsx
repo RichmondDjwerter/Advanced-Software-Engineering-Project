@@ -1,8 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { TrashIcon } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogMedia, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { TrashIcon } from "lucide-react";
 
 export function DeleteButton({ id, redirectUrl }: { id: string; redirectUrl: string }) {
   const handleDelete = async () => {
@@ -20,7 +20,7 @@ export function DeleteButton({ id, redirectUrl }: { id: string; redirectUrl: str
   return (
     <AlertDialog>
       <AlertDialogTrigger
-        render={<AlertDialogTrigger render={<Button variant="destructive" size="icon" aria-label="Delete Record"><TrashIcon /></Button>} />}
+        render={<AlertDialogTrigger render={<Button variant="destructive" aria-label="Delete Record"><TrashIcon /></Button>} />}
       />
       <AlertDialogContent size="sm">
         <AlertDialogHeader>

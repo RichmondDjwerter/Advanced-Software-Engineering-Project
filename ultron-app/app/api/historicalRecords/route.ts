@@ -34,27 +34,36 @@ export async function POST(request: Request) {
 } 
 
 export async function PUT(request: Request) {
-  const id = new URL(request.url).searchParams.get("id")
+  const id = new URL(request.url).searchParams.get("id");
+
   if (!id) {
     return NextResponse.json(
       { error: "Missing historical record ID" },
       { status: 400 },
-    )
+    );
   }
 
-  const formData = await request.formData()
-  const res = await fetch(`${API_URL}/historical_records/${encodeURIComponent(id)}`, {
-    method: "PUT",
-    body: formData,
-  })
+  const body = await request.json();
+
+  const res = await fetch(
+    `${API_URL}/historical_records/${encodeURIComponent(id)}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+  );
+
   if (!res.ok) {
     return NextResponse.json(
       { error: "Failed to update historical record" },
       { status: res.status },
-    )
+    );
   }
 
-  return NextResponse.json(await res.json())
+  return NextResponse.json(await res.json());
 }
 
 export async function DELETE(request: Request) {

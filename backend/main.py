@@ -134,7 +134,6 @@ def update_historical_record(
         raise HTTPException(status_code=404, detail="Historical record not found")
 
     record.name = record_update.name
-    record.description = record_update.description
 
     db.commit()
     db.refresh(record)
