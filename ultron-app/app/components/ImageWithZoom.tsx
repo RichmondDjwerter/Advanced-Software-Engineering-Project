@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { CardContent } from "@/components/ui/card";
-import { X } from "lucide-react";
 import Image from "next/image";
 
 // Props the component gets from outside
@@ -58,14 +57,6 @@ export function ImageWithZoom({ id, name }: Props) {
             className="h-full w-full rounded-lg object-contain"
             onError={() => setImageNotFound(true)}
           />
-          <button
-            type="button"
-            className="absolute top-5 right-6 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            onClick={() => setImageZoomed(false)}
-            aria-label="Close zoomed image"
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
       )}
     </CardContent>

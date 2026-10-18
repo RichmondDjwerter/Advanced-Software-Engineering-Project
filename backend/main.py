@@ -122,6 +122,50 @@ async def create_historical_record(
         "updated_at": new_record.updated_at.isoformat(),
     }
 
+@app.put("/historical_records/{record_id}")
+def update_historical_record(
+    record_id: str,
+    record_update: HistoricalRecordCreate,
+    db: Session = Depends(get_db),
+):
+    record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Historical record not found")
+
+    record.name = record_update.name
+    record.description = record_update.description
+
+    db.commit()
+    db.refresh(record)
+
+    return {
+        "id": record.id,
+        "name": record.name,
+        "description": record.description,
+        "created_at": record.created_at.isoformat(),
+        "updated_at": record.updated_at.isoformat(),
+    }
+
+@app.delete("/historical_records/{record_id}")
+def delete_historical_record(
+    record_id: str,
+    db: Session = Depends(get_db),
+):
+    record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Historical record not found")
+
+    file_path = UPLOAD_DIR / f"{record.id}{Path(record.name).suffix}"
+    if file_path.exists():
+        file_path.unlink()
+
+    db.delete(record)
+    db.commit()
+
+    return {"message": "Historical record deleted successfully"}
+
 # Chat Routes
 
 @app.post("/historical_records/{record_id}/chat", response_model=ChatResponse)

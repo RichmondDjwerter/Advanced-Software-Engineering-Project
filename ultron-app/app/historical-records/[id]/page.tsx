@@ -3,8 +3,9 @@ import { OriginalView } from "@/app/components/OriginalView";
 import { TranslationView } from "@/app/components/TranslationView";
 import { Chat } from "@/app/components/Chat";
 import { Button } from "@/components/ui/button"; 
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, Delete } from "lucide-react";
 import { ULTRON_URL } from "@/app/lib/api";
+import { DeleteButton } from "@/app/components/DeleteButton";
 
 export default async function HistoricalRecordPage(
   props: PageProps<"/historical-records/[id]">
@@ -23,6 +24,7 @@ export default async function HistoricalRecordPage(
         <h1 className="font-heading text-2xl font-medium tracking-tight">
           Document {name}
         </h1>
+        <DeleteButton id={id} redirectUrl="/historical-records" />
       </div>
 
       <div className="flex flex-1 flex-col justify-center gap-10 pb-20">

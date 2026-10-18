@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
 import { ImageWithZoom } from "@/app/components/ImageWithZoom";
+import { DeleteButton } from "@/app/components/DeleteButton";
 
 // Props the component gets from outside
 type Props = {
@@ -17,13 +18,14 @@ export function RecordCard({ id, name, description}: Props){
                 <CardHeader>
                     <CardTitle>{name}</CardTitle>
                     <CardDescription>{description}</CardDescription>
-                    <CardAction>
+                    <CardAction className="flex items-center gap-2">
                         <Link
                             href={`/historical-records/${id}`}
                             className="text-sm font-medium underline-offset-4 hover:underline"
                         >
                             View Document
                         </Link>
+                        <DeleteButton id={id} redirectUrl="/historical-records" />
                     </CardAction>
                 </CardHeader>
                 <ImageWithZoom key={`${id}-${name}`} id={id} name={name} />

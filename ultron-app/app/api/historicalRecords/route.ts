@@ -34,8 +34,16 @@ export async function POST(request: Request) {
 } 
 
 export async function PUT(request: Request) {
+  const id = new URL(request.url).searchParams.get("id")
+  if (!id) {
+    return NextResponse.json(
+      { error: "Missing historical record ID" },
+      { status: 400 },
+    )
+  }
+
   const formData = await request.formData()
-  const res = await fetch(`${API_URL}/historical_records`, {
+  const res = await fetch(`${API_URL}/historical_records/${encodeURIComponent(id)}`, {
     method: "PUT",
     body: formData,
   })
@@ -50,10 +58,16 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const formData = await request.formData()
-  const res = await fetch(`${API_URL}/historical_records`, {
+  const id = new URL(request.url).searchParams.get("id")
+  if (!id) {
+    return NextResponse.json(
+      { error: "Missing historical record ID" },
+      { status: 400 },
+    )
+  }
+
+  const res = await fetch(`${API_URL}/historical_records/${encodeURIComponent(id)}`, {
     method: "DELETE",
-    body: formData,
   })
   if (!res.ok) {
     return NextResponse.json(
