@@ -2,15 +2,17 @@ import Link from "next/link";
 import { OriginalView } from "@/app/components/OriginalView";
 import { TranslationView } from "@/app/components/TranslationView";
 import { Chat } from "@/app/components/Chat";
-import { Button } from "@/components/ui/button"; 
+import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon } from "lucide-react";
 import { ULTRON_URL } from "@/app/lib/api";
 
 export default async function HistoricalRecordPage(
-  props: PageProps<"/historical-records/[id]">
+  props: PageProps<"/historical-records/[id]">,
 ) {
   const { id } = await props.params;
-  const { name } = await fetch(`${ULTRON_URL}/api/historicalRecords?id=${id}`).then((res) => res.json());
+  const { name } = await fetch(
+    `${ULTRON_URL}/api/historicalRecords?id=${id}`,
+  ).then((res) => res.json());
 
   return (
     <>
@@ -31,9 +33,8 @@ export default async function HistoricalRecordPage(
           <TranslationView />
         </div>
 
-        <Chat recordId={id}/>
+        <Chat recordId={id} />
       </div>
     </>
   );
 }
-
