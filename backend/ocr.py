@@ -86,10 +86,20 @@ def find_line_boxes(image: Image.Image) -> list[tuple[int, int, int, int]]:
     min_peak = 0.15 * profile.max()
 
     # 4. Typical distance between two lines, from the profile's periodicity.
+    #    The autocorrelation also peaks at 2x, 3x... the line spacing, so we
+    #    take the FIRST strong peak, not the highest one (otherwise every
+    #    other line can be skipped and lines get merged in pairs).
     centred = profile - profile.mean()
     autocorr = np.correlate(centred, centred, mode="full")[height - 1:]
     low, high = max(5, height // 60), max(10, height // 4)
-    spacing = low + int(np.argmax(autocorr[low:high]))
+    window = autocorr[low:high]
+    spacing = low + int(np.argmax(window))
+    if window.size > 2 and window.max() > 0:
+        for lag in range(1, window.size - 1):
+            is_local_max = window[lag] >= window[lag - 1] and window[lag] >= window[lag + 1]
+            if is_local_max and window[lag] >= 0.5 * window.max():
+                spacing = low + lag
+                break
 
     # 5. Peaks: local maxima, strongest first, at least 0.6 x spacing apart.
     candidates = [
