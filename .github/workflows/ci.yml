@@ -159,6 +159,9 @@ jobs:
       - name: Check formatting
         run: npx prettier --check .
 
+      - name: Generate Next.js types
+        run: npx next typegen
+
       - name: Type-check TypeScript
         run: npx tsc --noEmit
 
