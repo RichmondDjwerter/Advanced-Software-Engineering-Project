@@ -13,12 +13,20 @@ type Props = {
 }
 // Function: Component itself
 export function RecordCard({ id, name, description}: Props){
+    const extensionIndex = name.lastIndexOf(".");
+    const hasExtension = extensionIndex > 0;
+    const baseName = hasExtension ? name.slice(0, extensionIndex) : name;
+    const extension = hasExtension ? name.slice(extensionIndex) : "";
+
     return (
             <Card>
                 <CardHeader>
-                    <CardTitle>{name}</CardTitle>
+                    <CardTitle className="flex min-w-0 pr-2" title={name}>
+                        <span className="min-w-0 truncate">{baseName}</span>
+                        {extension && <span className="shrink-0">{extension}</span>}
+                    </CardTitle>
                     <CardDescription>{description}</CardDescription>
-                    <CardAction className="flex items-center gap-2">
+                    <CardAction className="flex shrink-0 items-center gap-2 whitespace-nowrap">
                         <Link
                             href={`/historical-records/${id}`}
                             className="text-sm font-medium underline-offset-4 hover:underline"

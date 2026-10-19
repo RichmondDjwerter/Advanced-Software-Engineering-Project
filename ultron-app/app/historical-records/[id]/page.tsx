@@ -101,6 +101,15 @@ export default function HistoricalRecordPage(
       return;
     }
 
+    if (trimmedName.length > 255 - extension.length) {
+      setError(
+        `The filename is too long. Maximum length is ${
+          255 - extension.length
+        } characters.`
+      );
+      return;
+    }
+
     const newName = `${trimmedName}${extension}`;
 
     if (newName === name) {
@@ -158,11 +167,11 @@ export default function HistoricalRecordPage(
           </Button>
         </Link>
 
-        <h1 className="flex items-center gap-1 font-heading text-2xl font-medium tracking-tight">
+        <h1 className="flex min-w-0 flex-1 items-center gap-1 font-heading text-2xl font-medium tracking-tight">
           Document{" "}
 
           {editing ? (
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex min-w-0 flex-1 items-center gap-1">
               <Input
                 ref={inputRef}
                 value={editedName}
@@ -179,15 +188,16 @@ export default function HistoricalRecordPage(
                 }}
                 disabled={saving}
                 aria-label="Record filename"
-                className="h-9 w-48"
+                className="h-9 min-w-0 flex-1"
               />
 
-              <span>{extension}</span>
+              <span className="shrink-0 whitespace-nowrap">{extension}</span>
 
               <Button
                 size="sm"
                 onClick={() => void saveName()}
                 disabled={saving}
+                className="shrink-0"
               >
                 {saving ? "Saving..." : "Save"}
               </Button>
@@ -197,19 +207,22 @@ export default function HistoricalRecordPage(
                 variant="outline"
                 onClick={cancelEditing}
                 disabled={saving}
+                className="shrink-0"
               >
                 Cancel
               </Button>
             </span>
           ) : (
             <>
-              <span>{editableName}{extension}</span>
+              <span className="min-w-0 truncate">{editableName}</span>
+              <span className="shrink-0 whitespace-nowrap">{extension}</span>
 
               <Button
                 variant="outline"
                 size="icon"
                 aria-label="Edit Record"
                 onClick={startEditing}
+                className="shrink-0"
               >
                 <EditIcon />
               </Button>
