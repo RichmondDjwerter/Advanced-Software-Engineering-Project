@@ -125,13 +125,7 @@ jobs:
         run: uv run --with mypy mypy main.py database.py models.py
 
       - name: Run Python tests
-        shell: bash
-        run: |
-          if find . -type f \( -name 'test_*.py' -o -name '*_test.py' \) | grep -q .; then
-            uv run --with pytest pytest -q
-          else
-            echo "No Python tests found; skipping pytest."
-          fi
+        run: uv run python -m pytest -q
 
       - name: Check Python syntax
         run: uv run python -m compileall -q main.py database.py models.py
@@ -169,13 +163,7 @@ jobs:
         run: npm run lint
 
       - name: Run front-end tests
-        shell: bash
-        run: |
-          if node -e "const pkg=require('./package.json'); process.exit(pkg.scripts && pkg.scripts.test ? 0 : 1)"; then
-            npm test -- --run
-          else
-            echo "No front-end test script configured; skipping tests."
-          fi
+        run: npm test
 
       - name: Build production app
         run: npm run build
