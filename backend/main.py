@@ -2,7 +2,6 @@ import logging
 from io import BytesIO
 from datetime import datetime
 from pathlib import Path
-from uuid import uuid4
 
 import uvicorn
 from fastapi import (
@@ -130,7 +129,6 @@ def get_historical_records(
             "id": record.id,
             "name": record.name,
             "description": record.description,
-            "image_filename": record.image_filename,
             "extracted_text": record.extracted_text,
             "created_at": record.created_at.isoformat(),
             "updated_at": record.updated_at.isoformat(),
@@ -160,7 +158,6 @@ def get_historical_record(
         "id": record.id,
         "name": record.name,
         "description": record.description,
-        "image_filename": record.image_filename,
         "extracted_text": record.extracted_text,
         "created_at": record.created_at.isoformat(),
         "updated_at": record.updated_at.isoformat(),
@@ -231,20 +228,6 @@ async def create_historical_record(
         image.filename or "historical-document"
     ).name
 
-    # Generate a unique filename for storage.
-
-    extension = {
-        "JPEG": ".jpg",
-        "PNG": ".png",
-        "GIF": ".gif",
-        "BMP": ".bmp",
-        "WEBP": ".webp",
-    }.get(image_format, ".img")
-
-    storage_filename = f"{uuid4().hex}{extension}"
-
-    file_path = UPLOAD_DIR / storage_filename
-
     # Run TrOCR on the uploaded image.
 
     try:
@@ -266,28 +249,10 @@ async def create_historical_record(
             ),
         ) from error
 
-
-    # Save the image to the uploads directory.
-
-    try:
-        file_path.write_bytes(image_bytes)
-
-    except OSError as error:
-        logger.exception("Failed to save the uploaded image.")
-
-        raise HTTPException(
-            status_code=500,
-            detail="The uploaded image could not be saved.",
-        ) from error
-    
     # Create the database record.
-            status_code=415, detail="Invalid file type. Only image files are allowed."
-        )
 
-    filename = Path(image.filename or "Unnamed Record").name
     new_record = HistoricalRecord(
         name=original_name,
-        image_filename=storage_filename,
         extracted_text=extracted_text,
         description=None,
     )
@@ -300,8 +265,6 @@ async def create_historical_record(
     except Exception as error:
         db.rollback()
 
-        file_path.unlink(missing_ok=True)
-
         logger.exception(
             "Failed to save the historical record to PostgreSQL."
         )
@@ -312,20 +275,28 @@ async def create_historical_record(
         ) from error
 
     # Return the saved record as JSON.
-    db.add(new_record)
-    db.flush()
+    extension = {
+        "JPEG": ".jpg",
+        "PNG": ".png",
+        "GIF": ".gif",
+        "BMP": ".bmp",
+        "WEBP": ".webp",
+    }.get(image_format, ".img")
+    file_path = UPLOAD_DIR / f"{new_record.id}{extension}"
 
-    file_path = UPLOAD_DIR / f"{new_record.id}{Path(filename).suffix}"
-    file_path.write_bytes(await image.read())
-
-    db.commit()
-    db.refresh(new_record)
+    try:
+        file_path.write_bytes(image_bytes)
+    except OSError as error:
+        logger.exception("Failed to save the uploaded image.")
+        raise HTTPException(
+            status_code=500,
+            detail="The uploaded image could not be saved.",
+        ) from error
 
     return {
         "id": new_record.id,
         "name": new_record.name,
         "description": new_record.description,
-        "image_filename": new_record.image_filename,
         "extracted_text": new_record.extracted_text,
         "created_at": new_record.created_at.isoformat(),
         "updated_at": new_record.updated_at.isoformat(),
@@ -392,8 +363,7 @@ def delete_historical_record(
     if not record:
         raise HTTPException(status_code=404, detail="Historical record not found")
 
-    file_path = UPLOAD_DIR / f"{record.id}{Path(record.name).suffix}"
-    if file_path.exists():
+    for file_path in UPLOAD_DIR.glob(f"{record.id}.*"):
         file_path.unlink()
 
     db.delete(record)

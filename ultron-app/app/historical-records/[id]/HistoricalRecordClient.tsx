@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeftIcon, EditIcon } from "lucide-react";
 import { notFound } from "next/navigation";
+import { TranscriptionView } from "@/app/components/TranscriptionView";
 
 export default function HistoricalRecordClient({
   id,
@@ -240,7 +241,7 @@ export default function HistoricalRecordClient({
           <OriginalView id={id} />
           <TranslationView />
         </div>
-
+        <TranscriptionView recordId={id} />
         {chat}
       </div>
     </>

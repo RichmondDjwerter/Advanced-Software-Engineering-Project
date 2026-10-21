@@ -12,14 +12,6 @@ type OriginalViewProps = {
 
 // Component to display the image of a historical record
 export function OriginalView({ id }: OriginalViewProps) {
-  const [imageNotFound, setImageNotFound] = useState(false);
-  const [imageName, setImageName] = useState<string | null>(null);
-  const [imageFilename, setImageFilename] = useState<string | null>(null);
-
-  useEffect(() => {
-    setImageNotFound(false);
-    setImageName(null);
-    setImageFilename(null);
   const [record, setRecord] = useState<HistoricalRecord | null>(null);
 
   useEffect(() => {
@@ -36,19 +28,6 @@ export function OriginalView({ id }: OriginalViewProps) {
           throw new Error("Failed to load historical record");
         }
 
-        const record = await response.json();
-        const name = record.name;
-        const filename = record.image_filename;
-
-        if (typeof name !== "string" || !name.trim()) {
-          throw new Error("Historical record has no original image");
-        }
-
-        setImageName(name.trim());
-        setImageFilename(
-          typeof filename === "string" && filename.trim() ? filename.trim() : null,
-        );
-      } catch {
         const data: HistoricalRecord = await response.json();
         setRecord(data);
       } catch (error) {
@@ -68,10 +47,6 @@ export function OriginalView({ id }: OriginalViewProps) {
       <CardHeader>
         <CardTitle>Original</CardTitle>
       </CardHeader>
-      <ImageWithZoom
-        name={imageNotFound ? "Image not found" : imageName || "Loading..."}
-        imageFilename={imageFilename}
-      />
 
       {record && <ImageWithZoom key={id} id={id} name={record.name} />}
     </Card>

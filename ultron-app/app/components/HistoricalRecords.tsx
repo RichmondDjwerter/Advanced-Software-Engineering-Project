@@ -4,13 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { RecordCard } from "@/app/components/RecordCard";
 import { UploadButton } from "@/app/components/UploadButton";
-
-type HistoricalRecord = {
-  id: string | number;
-  name: string;
-  description: string;
-  image_filename: string | null;
-};
 import { HistoricalRecord } from "@/app/types/historicalRecord";
 
 export default function HistoricalRecords() {
@@ -86,15 +79,6 @@ export default function HistoricalRecords() {
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {records.map((record) => (
-          <RecordCard
-          key={record.id}
-          id={String(record.id)}
-          name={record.name}
-          description={record.description}
-          imageFilename={record.image_filename}
-/>
-        ))}
         {records.filter((record) =>
           record.name.toLowerCase().includes(searchQuery.trim().toLowerCase()),
         ).length === 0 ? (
