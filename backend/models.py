@@ -1,7 +1,7 @@
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, String, Text, ForeignKey
+from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -40,7 +40,7 @@ class HistoricalRecord(Base):
     )
 
     # chat messages of the record, oldest first
-    chat_messages: Mapped[list["ChatMessage"]] = relationship(
+    chat_messages: Mapped[list[ChatMessage]] = relationship(
         back_populates="historical_record",
         cascade="all, delete-orphan",
         order_by="ChatMessage.created_at",
@@ -76,10 +76,10 @@ class ChatMessage(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
 
-    historical_record: Mapped["HistoricalRecord"] = relationship(
+    historical_record: Mapped[HistoricalRecord] = relationship(
         back_populates="chat_messages",
     )

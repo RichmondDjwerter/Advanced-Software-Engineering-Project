@@ -1,17 +1,16 @@
-import uvicorn
+from datetime import datetime
 from pathlib import Path
 
 import uvicorn
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
-from database import Base, engine, get_db
-from models import HistoricalRecord, ChatMessage
 from chat_mock import get_mock_reply
-from datetime import datetime
+from database import Base, engine, get_db
+from models import ChatMessage, HistoricalRecord
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
