@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="9887e21c-4409-4f64-943e-fdbaf25c8a19" name="Changes" comment="fix: CI tests">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/uv.lock" beforeDir="false" afterPath="$PROJECT_DIR$/backend/uv.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/api/historicalRecords/[id]/chat/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/api/historicalRecords/[id]/chat/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/api/historicalRecords/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/api/historicalRecords/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/components/Chat.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/components/Chat.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/components/ChatClient.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/components/ChatClient.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/components/HistoricalRecords.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/components/HistoricalRecords.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/historical-records/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/historical-records/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/types/chat.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/types/chat.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/components/ui/avatar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/components/ui/avatar.tsx" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="TypeScript File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3KDpuCCUyARxu6eFCfIbthTVQsg" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "feature/chat",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/Users/Viola/Desktop/HS2026/ASE/Advanced-Software-Engineering-Project",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.jshint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.jshint": "",
+    "nodejs_package_manager_path": "npm",
+    "python.packages.toolwindow.project.migrated.to.right.top.v2": "true",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "ts.external.directory.path": "/Applications/IntelliJ IDEA.app/Contents/plugins/javascript-plugin/jsLanguageServicesImpl/external"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/ultron-app/public/ultron" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="Advanced-Software-Engineering-Project" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="Advanced-Software-Engineering-Project" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <module name="Advanced-Software-Engineering-Project" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="DEBUG_JUST_MY_CODE" value="false" />
+      <option name="RUN_TOOL" value="" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="Tox" factoryName="Tox">
+      <module name="Advanced-Software-Engineering-Project" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="DEBUG_JUST_MY_CODE" value="false" />
+      <option name="RUN_TOOL" value="" />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-a203e0a19954-intellij.indexing.shared.core-IU-262.10968.63" />
+        <option value="bundled-js-predefined-d6986cc7102b-4abd2a77f808-JavaScript-IU-262.10968.63" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9887e21c-4409-4f64-943e-fdbaf25c8a19" name="Changes" comment="" />
+      <created>1791102216289</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1791102216289</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="delete unused init py file" />
+    <MESSAGE value="feat: create service to connect chat with backend" />
+    <MESSAGE value="feat: implement message scroller to display chat" />
+    <MESSAGE value="feat: implement tabs to switch between transcription and translation view" />
+    <MESSAGE value="refactor: page layout" />
+    <MESSAGE value="refactor(chat): move service chat logic into route handler, add avatars for user and assistant" />
+    <MESSAGE value="feat(chat): mock conversation for chat" />
+    <MESSAGE value="feat(db): add model for chat" />
+    <MESSAGE value="fix: CI tests" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix: CI tests" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/ultron-app/app/types/chat.ts</url>
+          <line>3</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>
