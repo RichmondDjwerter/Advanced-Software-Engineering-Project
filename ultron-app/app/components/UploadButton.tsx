@@ -3,7 +3,11 @@
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export function UploadButton({ onUploadSuccess = () => {} }: { onUploadSuccess?: () => void | Promise<void> }) {
+export function UploadButton({
+  onUploadSuccess = () => {},
+}: {
+  onUploadSuccess?: () => void | Promise<void>;
+}) {
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
@@ -28,7 +32,7 @@ export function UploadButton({ onUploadSuccess = () => {} }: { onUploadSuccess?:
     <label
       className={cn(
         buttonVariants({ variant: "default", size: "lg" }),
-        "cursor-pointer bg-coral text-white hover:bg-coral/85 focus-within:ring-3 focus-within:ring-coral/40"
+        "cursor-pointer bg-coral text-white hover:bg-coral/85 focus-within:ring-3 focus-within:ring-coral/40",
       )}
     >
       <input

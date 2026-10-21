@@ -87,6 +87,25 @@ This command will build and start the application.
 ### 5. Access the application 
  Check if the server is running locally by following this URL: http://localhost:3000/
 
+## Running automated tests
+
+Run the backend API tests from the `backend` directory:
+
+```
+uv sync --frozen
+uv run python -m pytest -q
+```
+
+The backend tests use an isolated in-memory SQLite database and do not require PostgreSQL.
+
+Run the frontend tests from the `ultron-app` directory:
+
+```
+npm ci
+npm test
+```
+
+
 ## Frontend UI with shadcn/ui
 
 The frontend uses [shadcn/ui](https://ui.shadcn.com/) for UI components. When adding new features or pages, shadcn/ui components should be used wherever possible to keep the design consistent across the application.

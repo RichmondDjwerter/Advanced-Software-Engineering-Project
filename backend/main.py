@@ -1,18 +1,17 @@
 import uvicorn
 from pathlib import Path
 
-from fastapi import FastAPI, Depends, UploadFile, File, HTTPException
+import uvicorn
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, ConfigDict
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database import Base, engine, get_db
 from models import HistoricalRecord, ChatMessage
 from chat_mock import get_mock_reply
 from datetime import datetime
-
-from fastapi.staticfiles import StaticFiles
-
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -56,12 +55,15 @@ class ChatMessageOut(BaseModel):
 class ChatMessageCreate(BaseModel):
     content: str
 
+
 @app.get("/")
 def root():
     return {"message": "Historical Manuscripts API"}
 
+
 # Routes for Historical Records
 IMAGE_EXTENSIONS = {"image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp"}
+
 
 @app.get("/historical_records")
 def get_historical_records(
@@ -79,6 +81,7 @@ def get_historical_records(
         }
         for record in records
     ]
+
 
 @app.get("/historical_records/{record_id}")
 def get_historical_record(
@@ -98,14 +101,16 @@ def get_historical_record(
         "updated_at": record.updated_at.isoformat(),
     }
 
+
 @app.post("/historical_records")
 async def create_historical_record(
-
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
     if image.content_type not in IMAGE_EXTENSIONS:
-        raise HTTPException(status_code=415, detail="Invalid file type. Only image files are allowed.")
+        raise HTTPException(
+            status_code=415, detail="Invalid file type. Only image files are allowed."
+        )
 
     filename = Path(image.filename or "Unnamed Record").name
     new_record = HistoricalRecord(
@@ -162,6 +167,7 @@ def post_message(record_id: str, chat_message: ChatMessageCreate, db: Session = 
     db.refresh(assistant_message)
 
     return [user_message, assistant_message]
+
 
 if __name__ == "__main__":
     uvicorn.run(
