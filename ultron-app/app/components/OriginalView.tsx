@@ -19,7 +19,7 @@ export function OriginalView({ id }: OriginalViewProps) {
       try {
         const response = await fetch(
           `/api/historicalRecords?id=${encodeURIComponent(id)}`,
-          { signal: controller.signal }
+          { signal: controller.signal },
         );
 
         if (!response.ok) {
@@ -46,9 +46,7 @@ export function OriginalView({ id }: OriginalViewProps) {
         <CardTitle>Original</CardTitle>
       </CardHeader>
 
-      {record && (
-        <ImageWithZoom key={id} id={id} name={record.name}/>
-      )}
+      {record && <ImageWithZoom key={id} id={id} name={record.name} />}
     </Card>
   );
 }

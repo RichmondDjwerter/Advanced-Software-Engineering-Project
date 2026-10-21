@@ -1,16 +1,21 @@
 // imports
 import Link from "next/link";
-import { Card, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+} from "@/components/ui/card";
 import { ImageWithZoom } from "@/app/components/ImageWithZoom";
 import { DeleteButton } from "@/app/components/DeleteButton";
 
 // Props the component gets from outside
 type Props = {
-    id: string;
-    name: string;
-    description: string | null;
-
-}
+  id: string;
+  name: string;
+  description: string | null;
+};
 // Function: Component itself
 export function RecordCard({ id, name, description}: Props){
     const extensionIndex = name.lastIndexOf(".");
