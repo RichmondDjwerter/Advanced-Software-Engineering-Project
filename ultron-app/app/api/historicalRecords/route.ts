@@ -67,17 +67,20 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const id = new URL(request.url).searchParams.get("id")
+  const id = new URL(request.url).searchParams.get("id");
   if (!id) {
     return NextResponse.json(
       { error: "Missing historical record ID" },
       { status: 400 },
-    )
+    );
   }
 
-  const res = await fetch(`${API_URL}/historical_records/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  })
+  const res = await fetch(
+    `${API_URL}/historical_records/${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+    },
+  );
   if (!res.ok) {
     return NextResponse.json(
       { error: "Failed to delete historical record" },

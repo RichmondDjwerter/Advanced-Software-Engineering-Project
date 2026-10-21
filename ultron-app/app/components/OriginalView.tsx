@@ -5,10 +5,12 @@ import { ImageWithZoom } from "@/app/components/ImageWithZoom";
 import { useEffect, useState } from "react";
 import { HistoricalRecord } from "@/app/types/historicalRecord";
 
+// Props for the OriginalView component
 type OriginalViewProps = {
   id: string;
 };
 
+// Component to display the image of a historical record
 export function OriginalView({ id }: OriginalViewProps) {
   const [record, setRecord] = useState<HistoricalRecord | null>(null);
 

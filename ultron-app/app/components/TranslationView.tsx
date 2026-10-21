@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+// Component to display the transcription and translation of a historical record
 export function TranslationView() {
   return (
     <Card className="h-full">

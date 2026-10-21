@@ -135,6 +135,7 @@ async def create_historical_record(
         "updated_at": new_record.updated_at.isoformat(),
     }
 
+
 @app.put("/historical_records/{record_id}")
 def update_historical_record(
     record_id: str,
@@ -159,6 +160,7 @@ def update_historical_record(
         "updated_at": record.updated_at.isoformat(),
     }
 
+
 @app.delete("/historical_records/{record_id}")
 def delete_historical_record(
     record_id: str,
@@ -178,9 +180,8 @@ def delete_historical_record(
 
     return {"message": "Historical record deleted successfully"}
 
+
 # Chat Routes
-
-
 @app.get("/historical_records/{record_id}/chat", response_model=list[ChatMessageOut])
 def get_chat_history(record_id: str, db: Session = Depends(get_db)):
     record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
