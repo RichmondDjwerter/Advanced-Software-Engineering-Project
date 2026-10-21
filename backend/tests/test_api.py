@@ -83,7 +83,10 @@ def test_chat_returns_user_message_and_mocked_reply(client: TestClient) -> None:
     assert user_message["role"] == "user"
     assert user_message["content"] == "Who wrote this letter?"
     assert assistant_message["role"] == "assistant"
-    assert assistant_message["content"] == chat_mock.MOCK_RESPONSES["who wrote this letter?"]
+    assert (
+        assistant_message["content"]
+        == chat_mock.MOCK_RESPONSES["who wrote this letter?"]
+    )
     assert assistant_message["historical_record_id"] == record_id
 
 
