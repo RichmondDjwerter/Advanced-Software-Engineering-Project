@@ -1,8 +1,8 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
 
@@ -28,14 +28,14 @@ class HistoricalRecord(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
 
@@ -48,3 +48,41 @@ class HistoricalRecord(Base):
         Text,
         nullable=True,
         )
+    # chat messages of the record, oldest first
+    chat_messages: Mapped[list[ChatMessage]] = relationship(
+        back_populates="historical_record",
+        cascade="all, delete-orphan",
+        order_by="ChatMessage.created_at",
+    )
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid4()),
+    )
+
+    # ondelete="CASCADE" ensures that the messages are deleted with the corresponding record
+    historical_record_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("historical_records.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    role: Mapped[str] = mapped_column(String(16), nullable=False)
+
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+    historical_record: Mapped[HistoricalRecord] = relationship(
+        back_populates="chat_messages",
+    )

@@ -1,5 +1,6 @@
 import logging
 from io import BytesIO
+from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -15,15 +16,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from PIL import Image, UnidentifiedImageError
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
+from chat_mock import get_mock_reply
 from database import Base, engine, get_db
 from models import HistoricalRecord
 from ocr import transcribe_image
 
 Base.metadata.create_all(bind=engine)
 
+from models import ChatMessage, HistoricalRecord
 
 app = FastAPI(
     title="Historical Manuscripts API",
@@ -34,6 +41,7 @@ app = FastAPI(
 
 logger = logging.getLogger(__name__)
 
+app = FastAPI()
 
 UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -50,6 +58,7 @@ MAX_IMAGE_BYTES = 15 * 1024 * 1024  # 15 MB
 MAX_IMAGE_PIXELS = 40_000_000
 
 
+# CORS configuration
 origins = [
     "http://localhost:3000",
 ]
@@ -70,6 +79,7 @@ app.mount(
 )
 
 
+
 class HistoricalRecordCreate(BaseModel):
     name: str
     description: str | None = None
@@ -81,6 +91,20 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+# Classes for Chat
+class ChatMessageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    historical_record_id: str
+    role: str
+    content: str
+    created_at: datetime
+
+
+class ChatMessageCreate(BaseModel):
+    content: str
+
 
 
 # ROOT ENDPOINT
@@ -90,6 +114,10 @@ def root():
     return {
         "message": "Historical Manuscripts API",
     }
+
+# Routes for Historical Records
+IMAGE_EXTENSIONS = {"image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp"}
+
 
 @app.get("/historical_records")
 def get_historical_records(
@@ -253,7 +281,10 @@ async def create_historical_record(
         ) from error
     
     # Create the database record.
+            status_code=415, detail="Invalid file type. Only image files are allowed."
+        )
 
+    filename = Path(image.filename or "Unnamed Record").name
     new_record = HistoricalRecord(
         name=original_name,
         image_filename=storage_filename,
@@ -281,6 +312,14 @@ async def create_historical_record(
         ) from error
 
     # Return the saved record as JSON.
+    db.add(new_record)
+    db.flush()
+
+    file_path = UPLOAD_DIR / f"{new_record.id}{Path(filename).suffix}"
+    file_path.write_bytes(await image.read())
+
+    db.commit()
+    db.refresh(new_record)
 
     return {
         "id": new_record.id,
@@ -317,6 +356,89 @@ def post_message(
 
 
 # RUN THE APPLICATION
+
+@app.put("/historical_records/{record_id}")
+def update_historical_record(
+    record_id: str,
+    record_update: HistoricalRecordCreate,
+    db: Session = Depends(get_db),
+):
+    record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Historical record not found")
+
+    record.name = record_update.name
+
+    db.commit()
+    db.refresh(record)
+
+    return {
+        "id": record.id,
+        "name": record.name,
+        "description": record.description,
+        "created_at": record.created_at.isoformat(),
+        "updated_at": record.updated_at.isoformat(),
+    }
+
+
+@app.delete("/historical_records/{record_id}")
+def delete_historical_record(
+    record_id: str,
+    db: Session = Depends(get_db),
+):
+    record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Historical record not found")
+
+    file_path = UPLOAD_DIR / f"{record.id}{Path(record.name).suffix}"
+    if file_path.exists():
+        file_path.unlink()
+
+    db.delete(record)
+    db.commit()
+
+    return {"message": "Historical record deleted successfully"}
+
+
+# Chat Routes
+@app.get("/historical_records/{record_id}/chat", response_model=list[ChatMessageOut])
+def get_chat_history(record_id: str, db: Session = Depends(get_db)):
+    record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Historical record not found")
+    return record.chat_messages
+
+
+@app.post(
+    "/historical_records/{record_id}/chat",
+    response_model=list[ChatMessageOut],
+    status_code=201,
+)
+def post_message(
+    record_id: str, chat_message: ChatMessageCreate, db: Session = Depends(get_db)
+):
+    """Saves the user message and the assistant response, returns both"""
+    record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Historical record not found")
+
+    content = chat_message.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Message is empty")
+
+    user_message = ChatMessage(role="user", content=content)
+    # Mocked answer until the LLM is connected
+    assistant_message = ChatMessage(role="assistant", content=get_mock_reply(content))
+
+    record.chat_messages.extend([user_message, assistant_message])
+    db.commit()
+    db.refresh(user_message)
+    db.refresh(assistant_message)
+
+    return [user_message, assistant_message]
+
 
 if __name__ == "__main__":
     uvicorn.run(

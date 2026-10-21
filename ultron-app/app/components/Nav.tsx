@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 
+// Navigation bar component
 export default function Nav() {
   return (
     <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">

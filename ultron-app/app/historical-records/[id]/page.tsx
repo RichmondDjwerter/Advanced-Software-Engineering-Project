@@ -1,6 +1,4 @@
-import Link from "next/link";
-import { OriginalView } from "@/app/components/OriginalView";
-import { TranslationView } from "@/app/components/TranslationView";
+import HistoricalRecordClient from "@/app/historical-records/[id]/HistoricalRecordClient";
 import { Chat } from "@/app/components/Chat";
 import { Button } from "@/components/ui/button"; 
 import { ArrowLeftIcon } from "lucide-react";
@@ -38,5 +36,11 @@ export default async function HistoricalRecordPage({
       </div>
     </>
   );
-}
 
+export default async function HistoricalRecordPage(
+  props: PageProps<"/historical-records/[id]">,
+) {
+  const { id } = await props.params;
+
+  return <HistoricalRecordClient id={id} chat={<Chat recordId={id} />} />;
+}

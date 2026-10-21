@@ -3,13 +3,17 @@
 import { useEffect, useState } from "react";
 import { CardContent } from "@/components/ui/card";
 import { API_URL } from "@/app/lib/api";
+import Image from "next/image";
 
 type Props = {
+  id: string;
   name: string;
   imageFilename?: string | null;
 };
 
 export function ImageWithZoom({ name, imageFilename }: Props) {
+// Function: Component itself
+export function ImageWithZoom({ id, name }: Props) {
   const [imageNotFound, setImageNotFound] = useState(false);
   const [imageZoomed, setImageZoomed] = useState(false);
 
@@ -38,7 +42,14 @@ export function ImageWithZoom({ name, imageFilename }: Props) {
           >
             <img
               src={imageUrl}
+            <Image
+              key={name}
+              src={`/api/uploads?name=${encodeURIComponent(id)}.${name.split(".").pop()}`}
               alt={name}
+              width={0}
+              height={0}
+              sizes="100vw"
+              loading="eager"
               className="h-full w-full rounded-lg object-contain"
               onError={() => setImageNotFound(true)}
             />
@@ -56,9 +67,16 @@ export function ImageWithZoom({ name, imageFilename }: Props) {
         >
           <img
             src={imageUrl}
+          <Image
+            key={name}
+            src={`/api/uploads?name=${encodeURIComponent(id)}.${name.split(".").pop()}`}
             alt={name}
-            className="max-h-full max-w-full object-contain"
-            onClick={(event) => event.stopPropagation()}
+            width={0}
+            height={0}
+            sizes="100vw"
+            loading="eager"
+            className="h-full w-full rounded-lg object-contain"
+            onError={() => setImageNotFound(true)}
           />
           <button
             type="button"
