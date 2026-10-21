@@ -7,8 +7,13 @@ import { ChatClient } from "@/app/components/ChatClient";
  * Loads the chat history and renders the interactive chat with it.
  */
 export async function Chat({ recordId }: { recordId: string }) {
-  const res = await fetch(`${ULTRON_URL}/api/historicalRecords/${recordId}/chat`, { cache: "no-store" });
+  const res = await fetch(
+    `${ULTRON_URL}/api/historicalRecords/${recordId}/chat`,
+    { cache: "no-store" },
+  );
   const history: ChatMessage[] = res.ok ? await res.json() : [];
 
-  return <ChatClient key={recordId} recordId={recordId} initialMessages={history} />;
+  return (
+    <ChatClient key={recordId} recordId={recordId} initialMessages={history} />
+  );
 }

@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="9887e21c-4409-4f64-943e-fdbaf25c8a19" name="Changes" comment="feat(db): add model for chat">
-      <change beforePath="$PROJECT_DIR$/backend/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/main.py" afterDir="false" />
+    <list default="true" id="9887e21c-4409-4f64-943e-fdbaf25c8a19" name="Changes" comment="fix: CI tests">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/uv.lock" beforeDir="false" afterPath="$PROJECT_DIR$/backend/uv.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/api/historicalRecords/[id]/chat/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/api/historicalRecords/[id]/chat/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/api/historicalRecords/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/api/historicalRecords/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/components/Chat.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/components/Chat.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/components/ChatClient.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/components/ChatClient.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/components/HistoricalRecords.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/components/HistoricalRecords.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/historical-records/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/historical-records/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/app/types/chat.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/types/chat.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ultron-app/components/ui/avatar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/components/ui/avatar.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,6 +54,7 @@
     "node.js.selected.package.jshint": "",
     "nodejs_package_manager_path": "npm",
     "python.packages.toolwindow.project.migrated.to.right.top.v2": "true",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
     "ts.external.directory.path": "/Applications/IntelliJ IDEA.app/Contents/plugins/javascript-plugin/jsLanguageServicesImpl/external"
   }
 }]]></component>
@@ -133,7 +144,8 @@
     <MESSAGE value="refactor(chat): move service chat logic into route handler, add avatars for user and assistant" />
     <MESSAGE value="feat(chat): mock conversation for chat" />
     <MESSAGE value="feat(db): add model for chat" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(db): add model for chat" />
+    <MESSAGE value="fix: CI tests" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix: CI tests" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -145,5 +157,9 @@
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
   </component>
 </project>

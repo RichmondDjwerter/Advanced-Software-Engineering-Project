@@ -1,66 +1,66 @@
-import {NextResponse} from "next/server";
-import {API_URL} from "@/app/lib/api";
+import { NextResponse } from "next/server";
+import { API_URL } from "@/app/lib/api";
 
 export async function GET(request: Request) {
-    const id = new URL(request.url).searchParams.get("id");
-    const url = id
-        ? `${API_URL}/historical_records/${encodeURIComponent(id)}`
-        : `${API_URL}/historical_records`;
-    const res = await fetch(url);
-    if (!res.ok) {
-        return NextResponse.json(
-            {error: "Failed to fetch historical records"},
-            {status: res.status},
-        );
-    }
+  const id = new URL(request.url).searchParams.get("id");
+  const url = id
+    ? `${API_URL}/historical_records/${encodeURIComponent(id)}`
+    : `${API_URL}/historical_records`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    return NextResponse.json(
+      { error: "Failed to fetch historical records" },
+      { status: res.status },
+    );
+  }
 
-    return NextResponse.json(await res.json());
+  return NextResponse.json(await res.json());
 }
 
 export async function POST(request: Request) {
-    const formData = await request.formData();
-    const res = await fetch(`${API_URL}/historical_records`, {
-        method: "POST",
-        body: formData,
-    });
-    if (!res.ok) {
-        return NextResponse.json(
-            {error: "Failed to add historical record"},
-            {status: res.status},
-        );
-    }
+  const formData = await request.formData();
+  const res = await fetch(`${API_URL}/historical_records`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) {
+    return NextResponse.json(
+      { error: "Failed to add historical record" },
+      { status: res.status },
+    );
+  }
 
-    return NextResponse.json(await res.json());
+  return NextResponse.json(await res.json());
 }
 
 export async function PUT(request: Request) {
-    const formData = await request.formData();
-    const res = await fetch(`${API_URL}/historical_records`, {
-        method: "PUT",
-        body: formData,
-    });
-    if (!res.ok) {
-        return NextResponse.json(
-            {error: "Failed to update historical record"},
-            {status: res.status},
-        );
-    }
+  const formData = await request.formData();
+  const res = await fetch(`${API_URL}/historical_records`, {
+    method: "PUT",
+    body: formData,
+  });
+  if (!res.ok) {
+    return NextResponse.json(
+      { error: "Failed to update historical record" },
+      { status: res.status },
+    );
+  }
 
-    return NextResponse.json(await res.json());
+  return NextResponse.json(await res.json());
 }
 
 export async function DELETE(request: Request) {
-    const formData = await request.formData();
-    const res = await fetch(`${API_URL}/historical_records`, {
-        method: "DELETE",
-        body: formData,
-    });
-    if (!res.ok) {
-        return NextResponse.json(
-            {error: "Failed to delete historical record"},
-            {status: res.status},
-        );
-    }
+  const formData = await request.formData();
+  const res = await fetch(`${API_URL}/historical_records`, {
+    method: "DELETE",
+    body: formData,
+  });
+  if (!res.ok) {
+    return NextResponse.json(
+      { error: "Failed to delete historical record" },
+      { status: res.status },
+    );
+  }
 
-    return NextResponse.json(await res.json());
+  return NextResponse.json(await res.json());
 }
