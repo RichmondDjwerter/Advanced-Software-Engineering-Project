@@ -42,7 +42,7 @@ class HistoricalRecord(Base):
     extracted_text: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
-        )
+    )
     # chat messages of the record, oldest first
     chat_messages: Mapped[list[ChatMessage]] = relationship(
         back_populates="historical_record",

@@ -78,7 +78,6 @@ app.mount(
 )
 
 
-
 class HistoricalRecordCreate(BaseModel):
     name: str
     description: str | None = None
@@ -90,6 +89,8 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+
+
 # Classes for Chat
 class ChatMessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -105,14 +106,15 @@ class ChatMessageCreate(BaseModel):
     content: str
 
 
-
 # ROOT ENDPOINT
+
 
 @app.get("/")
 def root():
     return {
         "message": "Historical Manuscripts API",
     }
+
 
 # Routes for Historical Records
 IMAGE_EXTENSIONS = {"image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp"}
@@ -142,11 +144,7 @@ def get_historical_record(
     record_id: str,
     db: Session = Depends(get_db),
 ):
-    record = (
-        db.query(HistoricalRecord)
-        .filter(HistoricalRecord.id == record_id)
-        .first()
-    )
+    record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
 
     if record is None:
         raise HTTPException(
@@ -165,6 +163,7 @@ def get_historical_record(
 
 
 # UPLOAD A HISTORICAL DOCUMENT AND RUN OCR
+
 
 @app.post("/historical_records")
 async def create_historical_record(
@@ -199,11 +198,7 @@ async def create_historical_record(
 
     try:
         with Image.open(BytesIO(image_bytes)) as uploaded_image:
-
-            if (
-                uploaded_image.width * uploaded_image.height
-                > MAX_IMAGE_PIXELS
-            ):
+            if uploaded_image.width * uploaded_image.height > MAX_IMAGE_PIXELS:
                 raise HTTPException(
                     status_code=413,
                     detail="Image dimensions are too large to process.",
@@ -216,7 +211,7 @@ async def create_historical_record(
     except HTTPException:
         raise
 
-    except (UnidentifiedImageError, OSError):
+    except UnidentifiedImageError, OSError:
         raise HTTPException(
             status_code=415,
             detail="The uploaded file is not a readable image.",
@@ -224,9 +219,7 @@ async def create_historical_record(
 
     # Preserve the original filename for display.
 
-    original_name = Path(
-        image.filename or "historical-document"
-    ).name
+    original_name = Path(image.filename or "historical-document").name
 
     # Run TrOCR on the uploaded image.
 
@@ -237,9 +230,7 @@ async def create_historical_record(
         )
 
     except Exception as error:
-        logger.exception(
-            "TrOCR failed to process the uploaded image."
-        )
+        logger.exception("TrOCR failed to process the uploaded image.")
 
         raise HTTPException(
             status_code=503,
@@ -265,9 +256,7 @@ async def create_historical_record(
     except Exception as error:
         db.rollback()
 
-        logger.exception(
-            "Failed to save the historical record to PostgreSQL."
-        )
+        logger.exception("Failed to save the historical record to PostgreSQL.")
 
         raise HTTPException(
             status_code=500,
@@ -305,6 +294,7 @@ async def create_historical_record(
 
 # CHAT ENDPOINT
 
+
 @app.post(
     "/historical_records/{record_id}/chat",
     response_model=ChatResponse,
@@ -327,6 +317,7 @@ def post_message(
 
 
 # RUN THE APPLICATION
+
 
 @app.put("/historical_records/{record_id}")
 def update_historical_record(

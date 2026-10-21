@@ -35,7 +35,9 @@ export function TranscriptionView({ recordId }: Props) {
         setError(null);
       } catch {
         if (!controller.signal.aborted) {
-          setError("Could not load the transcription. Check that the backend is running.");
+          setError(
+            "Could not load the transcription. Check that the backend is running.",
+          );
         }
       }
     }
@@ -51,9 +53,13 @@ export function TranscriptionView({ recordId }: Props) {
       </CardHeader>
       <CardContent>
         {error ? (
-          <p role="alert" className="text-sm text-destructive">{error}</p>
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
         ) : text === null ? (
-          <p className="text-sm text-muted-foreground">Loading transcription…</p>
+          <p className="text-sm text-muted-foreground">
+            Loading transcription…
+          </p>
         ) : text.trim() ? (
           <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7">
             {text}

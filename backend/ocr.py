@@ -44,6 +44,7 @@ def load_model():
 # when long letters or flourishes touch the next line.
 # ---------------------------------------------------------------------------
 
+
 def _otsu_threshold(gray: np.ndarray) -> int:
     """Grey level that best separates ink from background for this image."""
     hist = np.bincount(gray.ravel(), minlength=256).astype(float)
@@ -75,9 +76,9 @@ def find_line_boxes(image: Image.Image) -> list[tuple[int, int, int, int]]:
     #    otherwise count as ink on every row and hide the gaps between lines.
     frame_x, frame_y = int(width * 0.02), int(height * 0.01)
     ink[:, :frame_x] = False
-    ink[:, width - frame_x:] = False
+    ink[:, width - frame_x :] = False
     ink[:frame_y, :] = False
-    ink[height - frame_y:, :] = False
+    ink[height - frame_y :, :] = False
 
     # 3. Dark pixels per row, smoothed. Lines = peaks, gaps = valleys.
     profile = _smooth(ink.sum(axis=1).astype(float), height / 100)
@@ -90,20 +91,23 @@ def find_line_boxes(image: Image.Image) -> list[tuple[int, int, int, int]]:
     #    take the FIRST strong peak, not the highest one (otherwise every
     #    other line can be skipped and lines get merged in pairs).
     centred = profile - profile.mean()
-    autocorr = np.correlate(centred, centred, mode="full")[height - 1:]
+    autocorr = np.correlate(centred, centred, mode="full")[height - 1 :]
     low, high = max(5, height // 60), max(10, height // 4)
     window = autocorr[low:high]
     spacing = low + int(np.argmax(window))
     if window.size > 2 and window.max() > 0:
         for lag in range(1, window.size - 1):
-            is_local_max = window[lag] >= window[lag - 1] and window[lag] >= window[lag + 1]
+            is_local_max = (
+                window[lag] >= window[lag - 1] and window[lag] >= window[lag + 1]
+            )
             if is_local_max and window[lag] >= 0.5 * window.max():
                 spacing = low + lag
                 break
 
     # 5. Peaks: local maxima, strongest first, at least 0.6 x spacing apart.
     candidates = [
-        row for row in range(1, height - 1)
+        row
+        for row in range(1, height - 1)
         if profile[row] >= min_peak
         and profile[row] >= profile[row - 1]
         and profile[row] >= profile[row + 1]
@@ -145,12 +149,14 @@ def find_line_boxes(image: Image.Image) -> list[tuple[int, int, int, int]]:
         used = np.nonzero(columns > 0.5)[0]
         if used.size == 0:
             continue
-        boxes.append((
-            max(0, int(used[0]) - pad_x),
-            max(0, top - overlap),
-            min(width, int(used[-1]) + 1 + pad_x),
-            min(height, bottom + overlap),
-        ))
+        boxes.append(
+            (
+                max(0, int(used[0]) - pad_x),
+                max(0, top - overlap),
+                min(width, int(used[-1]) + 1 + pad_x),
+                min(height, bottom + overlap),
+            )
+        )
     return boxes
 
 
@@ -163,6 +169,7 @@ def split_page_into_lines(image: Image.Image) -> list[Image.Image]:
 # ---------------------------------------------------------------------------
 # Transcription
 # ---------------------------------------------------------------------------
+
 
 def transcribe_image(image_bytes: bytes) -> str:
     processor, model, device = load_model()
