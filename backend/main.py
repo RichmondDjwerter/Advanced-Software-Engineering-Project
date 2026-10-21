@@ -16,12 +16,10 @@ from datetime import datetime
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-
 app = FastAPI()
 
 UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
 
 # CORS configuration
 origins = [
@@ -38,9 +36,11 @@ app.add_middleware(
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
+
 class HistoricalRecordCreate(BaseModel):
     name: str
     description: str | None = None
+
 
 # Classes for Chat
 class ChatMessageOut(BaseModel):
@@ -51,6 +51,7 @@ class ChatMessageOut(BaseModel):
     role: str
     content: str
     created_at: datetime
+
 
 class ChatMessageCreate(BaseModel):
     content: str
@@ -67,7 +68,7 @@ IMAGE_EXTENSIONS = {"image/jpeg", "image/png", "image/gif", "image/bmp", "image/
 
 @app.get("/historical_records")
 def get_historical_records(
-    db: Session = Depends(get_db),
+        db: Session = Depends(get_db),
 ):
     records = db.query(HistoricalRecord).all()
 
@@ -85,8 +86,8 @@ def get_historical_records(
 
 @app.get("/historical_records/{record_id}")
 def get_historical_record(
-    record_id: str,
-    db: Session = Depends(get_db),
+        record_id: str,
+        db: Session = Depends(get_db),
 ):
     record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
 
@@ -104,8 +105,8 @@ def get_historical_record(
 
 @app.post("/historical_records")
 async def create_historical_record(
-    image: UploadFile = File(...),
-    db: Session = Depends(get_db),
+        image: UploadFile = File(...),
+        db: Session = Depends(get_db),
 ):
     if image.content_type not in IMAGE_EXTENSIONS:
         raise HTTPException(

@@ -46,6 +46,7 @@ class HistoricalRecord(Base):
         order_by="ChatMessage.created_at",
     )
 
+
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 

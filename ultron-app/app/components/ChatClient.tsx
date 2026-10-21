@@ -80,9 +80,9 @@ function TypingDots() {
  * Flow: Chat → /api/historicalRecords/[id]/chat → backend
  */
 export function ChatClient({
-                         recordId,
-                         initialMessages = [],
-                     }: {
+                               recordId,
+                               initialMessages = [],
+                           }: {
     recordId: string;
     initialMessages?: ChatMessage[];
 }) {
