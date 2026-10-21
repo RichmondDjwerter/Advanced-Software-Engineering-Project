@@ -213,3 +213,5 @@ pyrightconfig.json
 
 # Custom
 backend/uploads/
+
+debug_ocr_lines/

@@ -12,6 +12,31 @@ import { DeleteButton } from "@/app/components/DeleteButton";
 
 // Props the component gets from outside
 type Props = {
+    id: string;
+    name: string;
+    description: string | null;
+    imageFilename: string | null;
+
+}
+// Function: Component itself
+export function RecordCard({ id, name, description, imageFilename }: Props) {
+    return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>{name}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                    <CardAction>
+                        <Link
+                            href={`/historical-records/${id}`}
+                            className="text-sm font-medium underline-offset-4 hover:underline"
+                        >
+                            View Document
+                        </Link>
+                    </CardAction>
+                </CardHeader>
+                <ImageWithZoom name={name} />
+            </Card>
+    )
   id: string;
   name: string;
   description: string | null;
