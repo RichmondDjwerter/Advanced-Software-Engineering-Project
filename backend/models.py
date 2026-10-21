@@ -61,18 +61,12 @@ class ChatMessage(Base):
         String(36),
         ForeignKey("historical_records.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
-    role: Mapped[str] = mapped_column(
-        String(16),
-        nullable=False
-    )
+    role: Mapped[str] = mapped_column(String(16), nullable=False)
 
-    content: Mapped[str] = mapped_column(
-        Text,
-        nullable=False
-    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

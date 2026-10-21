@@ -67,7 +67,7 @@ IMAGE_EXTENSIONS = {"image/jpeg", "image/png", "image/gif", "image/bmp", "image/
 
 @app.get("/historical_records")
 def get_historical_records(
-        db: Session = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     records = db.query(HistoricalRecord).all()
 
@@ -85,8 +85,8 @@ def get_historical_records(
 
 @app.get("/historical_records/{record_id}")
 def get_historical_record(
-        record_id: str,
-        db: Session = Depends(get_db),
+    record_id: str,
+    db: Session = Depends(get_db),
 ):
     record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
 
@@ -104,8 +104,8 @@ def get_historical_record(
 
 @app.post("/historical_records")
 async def create_historical_record(
-        image: UploadFile = File(...),
-        db: Session = Depends(get_db),
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
 ):
     if image.content_type not in IMAGE_EXTENSIONS:
         raise HTTPException(
@@ -138,6 +138,7 @@ async def create_historical_record(
 
 # Chat Routes
 
+
 @app.get("/historical_records/{record_id}/chat", response_model=list[ChatMessageOut])
 def get_chat_history(record_id: str, db: Session = Depends(get_db)):
     record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
@@ -146,8 +147,14 @@ def get_chat_history(record_id: str, db: Session = Depends(get_db)):
     return record.chat_messages
 
 
-@app.post("/historical_records/{record_id}/chat", response_model=list[ChatMessageOut], status_code=201)
-def post_message(record_id: str, chat_message: ChatMessageCreate, db: Session = Depends(get_db)):
+@app.post(
+    "/historical_records/{record_id}/chat",
+    response_model=list[ChatMessageOut],
+    status_code=201,
+)
+def post_message(
+    record_id: str, chat_message: ChatMessageCreate, db: Session = Depends(get_db)
+):
     """Saves the user message and the assistant response, returns both"""
     record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
     if not record:

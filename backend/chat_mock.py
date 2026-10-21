@@ -11,8 +11,7 @@ MOCK_RESPONSES: dict[str, str] = {
         "Abraham Lincoln, the 16th President of the United States."
     ),
     "who was this letter addressed to?": (
-        "Major General George G. Meade, commander of the Union Army "
-        "of the Potomac."
+        "Major General George G. Meade, commander of the Union Army of the Potomac."
     ),
     "when was this letter written?": (
         "October 5, 1863, during the American Civil War."
