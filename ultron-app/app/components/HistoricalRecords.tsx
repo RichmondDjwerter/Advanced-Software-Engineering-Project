@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Search } from "lucide-react";
 import { RecordCard } from "@/app/components/RecordCard";
 import { UploadButton } from "@/app/components/UploadButton";
 import { HistoricalRecord } from "@/app/types/historicalRecord";
 
 export default function HistoricalRecords() {
   const [records, setRecords] = useState<HistoricalRecord[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const loadRecords = useCallback(async () => {
     const response = await fetch("/api/historicalRecords");
@@ -61,25 +63,52 @@ export default function HistoricalRecords() {
         <UploadButton onUploadSuccess={loadRecords} />
       </div>
 
+      <div className="relative">
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Filter historical records"
+          aria-label="Filter historical records"
+          className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
+        />
+      </div>
+
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {records.length === 0 ? (
+        {records.filter((record) =>
+          record.name.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+        ).length === 0 ? (
           <div className="col-span-full flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-10 text-center shadow-sm">
             <p className="text-base font-medium text-foreground">
-              No historical records found
+              {records.length === 0
+                ? "No historical records found"
+                : "No matching historical records found"}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Please upload an image to get started.
+              {records.length === 0
+                ? "Please upload an image to get started."
+                : "Try a different search term."}
             </p>
           </div>
         ) : (
-          records.map((record) => (
-            <RecordCard
-              key={record.id}
-              id={String(record.id)}
-              name={record.name}
-              description={record.description}
-            />
-          ))
+          records
+            .filter((record) =>
+              record.name
+                .toLowerCase()
+                .includes(searchQuery.trim().toLowerCase()),
+            )
+            .map((record) => (
+              <RecordCard
+                key={record.id}
+                id={String(record.id)}
+                name={record.name}
+                description={record.description}
+              />
+            ))
         )}
       </div>
     </>
