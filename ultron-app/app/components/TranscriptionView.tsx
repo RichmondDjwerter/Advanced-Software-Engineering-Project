@@ -47,10 +47,6 @@ export function TranscriptionView({ recordId }: Props) {
   }, [recordId]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>OCR transcription</CardTitle>
-      </CardHeader>
       <CardContent>
         {error ? (
           <p role="alert" className="text-sm text-destructive">
@@ -70,6 +66,5 @@ export function TranscriptionView({ recordId }: Props) {
           </p>
         )}
       </CardContent>
-    </Card>
   );
 }

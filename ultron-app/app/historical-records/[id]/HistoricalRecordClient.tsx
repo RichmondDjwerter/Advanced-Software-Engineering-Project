@@ -239,9 +239,8 @@ export default function HistoricalRecordClient({
       <div className="flex flex-1 flex-col justify-center gap-10 pb-20">
         <div className="grid gap-4 lg:grid-cols-2">
           <OriginalView id={id} />
-          <TranslationView />
+          <TranslationView recordId={id} />
         </div>
-        <TranscriptionView recordId={id} />
         {chat}
       </div>
     </>

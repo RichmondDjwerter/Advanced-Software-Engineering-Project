@@ -1,8 +1,13 @@
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TranscriptionView } from "@/app/components/TranscriptionView";
+
+type Props = {
+  recordId: string;
+};
 
 // Component to display the transcription and translation of a historical record
-export function TranslationView() {
+export function TranslationView({ recordId }: Props) {
   return (
     <Card className="h-full">
       <Tabs
@@ -17,7 +22,7 @@ export function TranslationView() {
         </CardHeader>
         <TabsContent value="transcription" className="flex">
           <CardContent className="flex min-h-40 flex-1 items-center justify-center">
-            Transcription goes here
+            <TranscriptionView recordId={recordId} />
           </CardContent>
         </TabsContent>
 
