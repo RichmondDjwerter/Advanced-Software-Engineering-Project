@@ -47,24 +47,22 @@ export function TranscriptionView({ recordId }: Props) {
   }, [recordId]);
 
   return (
-      <CardContent>
-        {error ? (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
-        ) : text === null ? (
-          <p className="text-sm text-muted-foreground">
-            Loading transcription…
-          </p>
-        ) : text.trim() ? (
-          <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7">
-            {text}
-          </pre>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No text was recognized in this image.
-          </p>
-        )}
-      </CardContent>
+    <CardContent>
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      ) : text === null ? (
+        <p className="text-sm text-muted-foreground">Loading transcription…</p>
+      ) : text.trim() ? (
+        <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7">
+          {text}
+        </pre>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          No text was recognized in this image.
+        </p>
+      )}
+    </CardContent>
   );
 }
