@@ -26,6 +26,7 @@ from chat_mock import get_mock_reply
 from database import Base, engine, get_db
 from models import HistoricalRecord
 from ocr import transcribe_image
+from translation import translate_text
 
 Base.metadata.create_all(bind=engine)
 
@@ -132,6 +133,7 @@ def get_historical_records(
             "name": record.name,
             "description": record.description,
             "extracted_text": record.extracted_text,
+            "translated_text": record.translated_text,
             "created_at": record.created_at.isoformat(),
             "updated_at": record.updated_at.isoformat(),
         }
@@ -157,9 +159,55 @@ def get_historical_record(
         "name": record.name,
         "description": record.description,
         "extracted_text": record.extracted_text,
+        "translated_text": record.translated_text,
         "created_at": record.created_at.isoformat(),
         "updated_at": record.updated_at.isoformat(),
     }
+
+
+# TRANSLATE THE EXTRACTED TEXT OF A RECORD INTO ENGLISH
+
+
+class TranslateRequest(BaseModel):
+    # Optional override, so translation can be tested without relying on OCR.
+    text: str | None = None
+
+
+@app.post("/historical_records/{record_id}/translate")
+async def translate_historical_record(
+    record_id: str,
+    language: str | None = None,
+    payload: TranslateRequest | None = None,
+    db: Session = Depends(get_db),
+):
+    record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
+
+    if record is None:
+        raise HTTPException(status_code=404, detail="Historical record not found")
+
+    source_text = (
+        payload.text
+        if payload is not None and payload.text is not None
+        else record.extracted_text or ""
+    )
+
+    try:
+        translated = await run_in_threadpool(
+            translate_text,
+            source_text,
+            language,
+        )
+    except Exception as error:
+        logger.exception("Translation failed.")
+        raise HTTPException(
+            status_code=503,
+            detail="Translation failed. Check the backend model setup and try again.",
+        ) from error
+
+    record.translated_text = translated
+    db.commit()
+
+    return {"id": record.id, "translated_text": record.translated_text}
 
 
 # UPLOAD A HISTORICAL DOCUMENT AND RUN OCR
@@ -287,6 +335,7 @@ async def create_historical_record(
         "name": new_record.name,
         "description": new_record.description,
         "extracted_text": new_record.extracted_text,
+        "translated_text": new_record.translated_text,
         "created_at": new_record.created_at.isoformat(),
         "updated_at": new_record.updated_at.isoformat(),
     }
