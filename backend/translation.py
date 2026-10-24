@@ -25,7 +25,6 @@ TRANSLATORS: dict[str, TranslatorConfig] = {
     ),
     # example for latin:
     # "la": TranslatorConfig("model")
-
     # Default translator "Helsinki-NLP/opus-mt-mul-en"
 }
 
