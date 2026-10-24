@@ -43,7 +43,7 @@ class HistoricalRecord(Base):
         Text,
         nullable=True,
     )
-
+    
     translated_text: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
