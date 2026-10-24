@@ -306,7 +306,7 @@ async def create_historical_record(
         "GIF": ".gif",
         "BMP": ".bmp",
         "WEBP": ".webp",
-    }.get(image_format, ".img")
+   }.get(image_format or "", ".img")
     file_path = UPLOAD_DIR / f"{new_record.id}{extension}"
 
     try:

@@ -74,7 +74,9 @@ class Translator:
                 no_repeat_ngram_size=3,
             )
 
-        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        decoded = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        assert isinstance(decoded, str)
+        return decoded
 
 
 @cache
