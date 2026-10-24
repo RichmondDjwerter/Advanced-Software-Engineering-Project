@@ -1,3 +1,5 @@
+// Component for displaying and translating English text from OCR output, allowing users to edit the source text before translation.
+
 "use client";
 
 import { useEffect, useState } from "react";
