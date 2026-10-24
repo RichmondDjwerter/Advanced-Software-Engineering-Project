@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TranscriptionView } from "@/app/components/TranscriptionView";
+import { EnglishTranslation } from "@/app/components/EnglishTranslation";
 
 type Props = {
   recordId: string;
@@ -27,9 +28,7 @@ export function TranslationView({ recordId }: Props) {
         </TabsContent>
 
         <TabsContent value="translation" className="flex">
-          <CardContent className="flex min-h-40 flex-1 items-center justify-center">
-            Translation goes here
-          </CardContent>
+          <EnglishTranslation recordId={recordId} />
         </TabsContent>
       </Tabs>
     </Card>

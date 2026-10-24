@@ -1,9 +1,12 @@
+from io import BytesIO
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 
 import chat_mock
+import main
 
 
 def test_root_returns_api_description(client: TestClient) -> None:
@@ -27,22 +30,38 @@ def test_missing_historical_record_returns_404(client: TestClient) -> None:
     assert response.json() == {"detail": "Historical record not found"}
 
 
+def make_png_bytes() -> bytes:
+    buffer = BytesIO()
+    Image.new("RGB", (4, 4), "white").save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+PNG_BYTES = make_png_bytes()
+
+
+@pytest.fixture(autouse=True)
+def fake_ocr(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Avoid loading the real TrOCR model in tests.
+    monkeypatch.setattr(main, "transcribe_image", lambda image_bytes: "fake text")
+
+
 def test_upload_image_creates_historical_record(
     client: TestClient, tmp_path: Path
 ) -> None:
     response = client.post(
         "/historical_records",
-        files={"image": ("record.png", b"image data", "image/png")},
+        files={"image": ("record.png", PNG_BYTES, "image/png")},
     )
 
     assert response.status_code == 200
     record = response.json()
     assert record["name"] == "record.png"
-    assert record["description"] == ""
+    assert record["description"] is None
+    assert record["extracted_text"] == "fake text"
     assert record["id"]
     assert record["created_at"]
     assert record["updated_at"]
-    assert (tmp_path / f"{record['id']}.png").read_bytes() == b"image data"
+    assert (tmp_path / f"{record['id']}.png").read_bytes() == PNG_BYTES
 
 
 def test_upload_non_image_returns_415(client: TestClient) -> None:
@@ -52,9 +71,7 @@ def test_upload_non_image_returns_415(client: TestClient) -> None:
     )
 
     assert response.status_code == 415
-    assert response.json() == {
-        "detail": "Invalid file type. Only image files are allowed."
-    }
+    assert response.json() == {"detail": "Upload a JPEG, PNG, GIF, BMP, or WebP image."}
 
 
 @pytest.fixture(autouse=True)
@@ -65,7 +82,7 @@ def no_mock_delay(monkeypatch: pytest.MonkeyPatch) -> None:
 def create_record(client: TestClient) -> str:
     response = client.post(
         "/historical_records",
-        files={"image": ("record.png", b"image data", "image/png")},
+        files={"image": ("record.png", PNG_BYTES, "image/png")},
     )
     return response.json()["id"]
 
