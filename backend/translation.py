@@ -23,7 +23,10 @@ TRANSLATORS: dict[str, TranslatorConfig] = {
     DEFAULT_LANGUAGE: TranslatorConfig(
         os.getenv("TRANSLATION_MODEL_ID", "Helsinki-NLP/opus-mt-mul-en")
     ),
-    # "la": TranslatorConfig("your-org/latin-to-english"),
+    # example for latin:
+    # "la": TranslatorConfig("model")
+
+    # Default translator "Helsinki-NLP/opus-mt-mul-en"
 }
 
 # OCR output is cut into chunks of about this many words so long pages are
@@ -43,7 +46,7 @@ class Translator:
 
     def translate(self, text: str) -> str:
         # Medieval OCR output contains combining abbreviation marks (m̃, dñ)
-        # that the tokenizer does not know; strip them before translating.
+        # that the tokenizer does not know; normalize the text before translating.
         text = "".join(
             char
             for char in unicodedata.normalize("NFD", text)
