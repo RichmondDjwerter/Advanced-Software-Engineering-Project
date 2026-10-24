@@ -1,7 +1,7 @@
 import os
 import unicodedata
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import cache
 
 import torch
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
@@ -77,7 +77,7 @@ class Translator:
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _load_translator(language: str) -> Translator:
     return Translator(TRANSLATORS[language])
 

@@ -1,23 +1,19 @@
 import logging
-from io import BytesIO
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 
 import uvicorn
 from fastapi import (
-    FastAPI,
     Depends,
-    UploadFile,
+    FastAPI,
     File,
     HTTPException,
+    UploadFile,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
 from PIL import Image, UnidentifiedImageError
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
@@ -30,7 +26,7 @@ from translation import translate_text
 
 Base.metadata.create_all(bind=engine)
 
-from models import ChatMessage, HistoricalRecord
+from models import ChatMessage
 
 app = FastAPI(
     title="Historical Manuscripts API",
@@ -82,14 +78,6 @@ app.mount(
 class HistoricalRecordCreate(BaseModel):
     name: str
     description: str | None = None
-
-
-class ChatRequest(BaseModel):
-    message: str
-
-
-class ChatResponse(BaseModel):
-    response: str
 
 
 # Classes for Chat
@@ -339,33 +327,6 @@ async def create_historical_record(
         "created_at": new_record.created_at.isoformat(),
         "updated_at": new_record.updated_at.isoformat(),
     }
-
-
-# CHAT ENDPOINT
-
-
-@app.post(
-    "/historical_records/{record_id}/chat",
-    response_model=ChatResponse,
-)
-def post_message(
-    record_id: str,
-    chat_request: ChatRequest,
-):
-    """
-    Placeholder chat endpoint.
-
-    Currently echoes the user's message.
-    This can later be replaced with an LLM that answers
-    questions about the historical manuscript.
-    """
-
-    return ChatResponse(
-        response=f"ECHO: {chat_request.message}",
-    )
-
-
-# RUN THE APPLICATION
 
 
 @app.put("/historical_records/{record_id}")
