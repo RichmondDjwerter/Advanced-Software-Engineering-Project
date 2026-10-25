@@ -83,14 +83,6 @@ class HistoricalRecordCreate(BaseModel):
     description: str | None = None
 
 
-class ChatRequest(BaseModel):
-    message: str
-
-
-class ChatResponse(BaseModel):
-    response: str
-
-
 # Classes for Chat
 class ChatMessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -290,30 +282,6 @@ async def create_historical_record(
         "created_at": new_record.created_at.isoformat(),
         "updated_at": new_record.updated_at.isoformat(),
     }
-
-
-# CHAT ENDPOINT
-
-
-@app.post(
-    "/historical_records/{record_id}/chat",
-    response_model=ChatResponse,
-)
-def post_message(
-    record_id: str,
-    chat_request: ChatRequest,
-):
-    """
-    Placeholder chat endpoint.
-
-    Currently echoes the user's message.
-    This can later be replaced with an LLM that answers
-    questions about the historical manuscript.
-    """
-
-    return ChatResponse(
-        response=f"ECHO: {chat_request.message}",
-    )
 
 
 # RUN THE APPLICATION
