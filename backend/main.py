@@ -329,6 +329,9 @@ async def create_historical_record(
     }
 
 
+# RUN THE APPLICATION
+
+
 @app.put("/historical_records/{record_id}")
 def update_historical_record(
     record_id: str,
