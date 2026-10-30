@@ -1,12 +1,12 @@
 from functools import lru_cache
 from io import BytesIO
+from itertools import pairwise
 from pathlib import Path
 
 import numpy as np
 import torch
 from PIL import Image, ImageOps
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
-
 
 # Line crops are written here for debugging (folder is git-ignored).
 debug_dir = Path("debug_ocr_lines")
@@ -135,7 +135,7 @@ def find_line_boxes(image: Image.Image) -> list[tuple[int, int, int, int]]:
 
     # 6. Cut between neighbouring peaks at the lowest point of the profile.
     cuts = [max(0, peaks[0] - spacing // 2)]
-    for upper, lower in zip(peaks, peaks[1:]):
+    for upper, lower in pairwise(peaks):
         cuts.append(upper + int(np.argmin(profile[upper:lower])))
     cuts.append(min(height, peaks[-1] + spacing // 2))
 
@@ -144,7 +144,7 @@ def find_line_boxes(image: Image.Image) -> list[tuple[int, int, int, int]]:
     overlap = int(0.15 * spacing)
     pad_x = max(4, width // 100)
     boxes = []
-    for top, bottom in zip(cuts, cuts[1:]):
+    for top, bottom in pairwise(cuts):
         columns = _smooth(ink[top:bottom].sum(axis=0).astype(float), width / 100)
         used = np.nonzero(columns > 0.5)[0]
         if used.size == 0:
