@@ -30,14 +30,20 @@ export function UploadButton({
     const upload = fetch("/api/historicalRecords", {
       method: "POST",
       body: formData,
-    }).then((response) => {
-      if (!response.ok) throw new Error("Failed to upload file");
+    }).then(async (response) => {
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error ?? "Failed to upload file");
+      }
       return response;
     });
     toast.promise(upload, {
-      loading: `Uploading ${file.name}..`,
+      loading: `Uploading ${file.name}…`,
       success: `${file.name} successfully uploaded.`,
-      error: `File couldn't be uploaded. Please try again.`,
+      error: (err) =>
+        err instanceof Error
+          ? err.message
+          : "File couldn't be uploaded. Please try again.",
     });
     try {
       await upload;

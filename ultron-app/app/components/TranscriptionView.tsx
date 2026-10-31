@@ -10,7 +10,7 @@ type Props = {
 };
 
 export function TranscriptionView({ recordId }: Props) {
-  const [text, setText] = useState<string | null>(null);
+  const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -64,7 +64,7 @@ export function TranscriptionView({ recordId }: Props) {
       );
     }
 
-    if (!text?.trim()) {
+    if (!text.trim()) {
       return (
         <p className="text-sm text-muted-foreground">
           No text was recognized in this image.

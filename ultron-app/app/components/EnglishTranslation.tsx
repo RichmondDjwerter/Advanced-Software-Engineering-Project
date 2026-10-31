@@ -68,8 +68,8 @@ export function EnglishTranslation({ recordId }: Props) {
     } catch (err) {
       console.error(err);
       toast.add({
-        title: "Error occurred",
-        description: "Translation failed.",
+        title: "Translation failed",
+        description: "Check that the backend is running.",
         type: "error",
       });
     } finally {

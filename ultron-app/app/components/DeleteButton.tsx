@@ -36,7 +36,7 @@ export function DeleteButton({
     });
 
     toast.promise(request, {
-      loading: "Deleting record..",
+      loading: "Deleting record…",
       success: "Record successfully deleted.",
       error: "The record could not be deleted. Please try again.",
     });
