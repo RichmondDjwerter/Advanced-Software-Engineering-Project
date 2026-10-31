@@ -7,6 +7,10 @@ import numpy as np
 import torch
 from PIL import Image, ImageOps
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+import subprocess
+import tempfile
+import xml.etree.ElementTree as ET
+import json
 
 # Line crops are written here for debugging (folder is git-ignored).
 debug_dir = Path("debug_ocr_lines")
@@ -15,6 +19,8 @@ debug_dir = Path("debug_ocr_lines")
 # Benchmarked by the team on 300 CATMuS test lines: about 19 % CER,
 # better than Qwen2-VL-2B (27 %). The "cursiva" variant only covers one script.
 MODEL_ID = "medieval-data/trocr-medieval-base"
+
+KRAKEN_BIN = Path(__file__).resolve().parent / ".venv-kraken" / "bin" / "kraken"
 
 
 @lru_cache(maxsize=1)
@@ -161,9 +167,59 @@ def find_line_boxes(image: Image.Image) -> list[tuple[int, int, int, int]]:
 
 
 def split_page_into_lines(image: Image.Image) -> list[Image.Image]:
-    """Cut a page image into one image per text line (whole image if none found)."""
-    boxes = find_line_boxes(image)
-    return [image.crop(box) for box in boxes] or [image]
+    """Use Kraken to split a page into line crops, preserving its reading order."""
+    if not KRAKEN_BIN.is_file():
+        raise RuntimeError(f"Kraken executable not found: {KRAKEN_BIN}")
+
+    with tempfile.TemporaryDirectory(prefix="ultron-kraken-") as temp_dir:
+        temp_path = Path(temp_dir)
+        image_path = temp_path / "page.png"
+        layout_path = temp_path / "layout.json"
+
+        image.save(image_path, format="PNG")
+
+        result = subprocess.run(
+            [
+                str(KRAKEN_BIN),
+                "-i", str(image_path), str(layout_path),
+                "-n", "segment", "-bl",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        if result.returncode != 0:
+            details = (result.stderr or result.stdout)[-3000:]
+            raise RuntimeError(f"Kraken segmentation failed:\n{details}")
+
+        if not layout_path.is_file():
+            raise RuntimeError("Kraken did not create its layout JSON file.")
+
+        layout = json.loads(layout_path.read_text())
+        crops = []
+
+        # Keep Kraken's order: sorting by y would interleave columns.
+        for line in layout.get("lines", []):
+            boundary = line.get("boundary") or []
+            if not boundary:
+                continue
+
+            xs = [point[0] for point in boundary]
+            ys = [point[1] for point in boundary]
+
+            # A little padding keeps marks near the line edges.
+            pad_x = 8
+            pad_y = 4
+            left = max(0, int(min(xs)) - pad_x)
+            top = max(0, int(min(ys)) - pad_y)
+            right = min(image.width, int(max(xs)) + 1 + pad_x)
+            bottom = min(image.height, int(max(ys)) + 1 + pad_y)
+
+            if right > left and bottom > top:
+                crops.append(image.crop((left, top, right, bottom)))
+
+        return crops or [image]
 
 
 # ---------------------------------------------------------------------------
