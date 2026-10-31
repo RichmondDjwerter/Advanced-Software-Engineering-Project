@@ -1,19 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="9887e21c-4409-4f64-943e-fdbaf25c8a19" name="Changes" comment="fix: CI tests">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/uv.lock" beforeDir="false" afterPath="$PROJECT_DIR$/backend/uv.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ultron-app/app/api/historicalRecords/[id]/chat/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/api/historicalRecords/[id]/chat/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ultron-app/app/api/historicalRecords/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/api/historicalRecords/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ultron-app/app/components/Chat.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/components/Chat.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ultron-app/app/components/ChatClient.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/components/ChatClient.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ultron-app/app/components/HistoricalRecords.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/components/HistoricalRecords.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ultron-app/app/historical-records/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/historical-records/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ultron-app/app/types/chat.ts" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/app/types/chat.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ultron-app/components/ui/avatar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ultron-app/components/ui/avatar.tsx" afterDir="false" />
-    </list>
+    <list default="true" id="9887e21c-4409-4f64-943e-fdbaf25c8a19" name="Changes" comment="fix: CI tests" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -45,7 +33,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "feature/chat",
+    "git-widget-placeholder": "feature/ui",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "/Users/Viola/Desktop/HS2026/ASE/Advanced-Software-Engineering-Project",
     "node.js.detected.package.eslint": "true",
