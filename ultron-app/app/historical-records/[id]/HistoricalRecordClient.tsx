@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ReactNode, use, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { OriginalView } from "@/app/components/OriginalView";
 import { TranslationView } from "@/app/components/TranslationView";
 import { DeleteButton } from "@/app/components/DeleteButton";
@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeftIcon, EditIcon } from "lucide-react";
 import { notFound } from "next/navigation";
-import { TranscriptionView } from "@/app/components/TranscriptionView";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/toast";
 
 export default function HistoricalRecordClient({
   id,
@@ -140,16 +141,23 @@ export default function HistoricalRecordClient({
       setName(newName);
       setEditing(false);
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to rename record.",
-      );
+      console.error(error);
+      toast.add({
+        title: "Rename failed",
+        description: "The record could not be renamed. Please try again.",
+        type: "error",
+      });
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <p>Loading record(s)...</p>;
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Spinner className="size-8" />
+      </div>
+    );
   }
 
   if (error && !name) {

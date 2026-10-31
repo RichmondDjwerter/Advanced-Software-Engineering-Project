@@ -14,6 +14,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { TrashIcon } from "lucide-react";
+import { toast } from "@/components/ui/toast";
+import { useRouter } from "next/navigation";
 
 export function DeleteButton({
   id,
@@ -22,16 +24,28 @@ export function DeleteButton({
   id: string;
   redirectUrl: string;
 }) {
+  const router = useRouter();
   const handleDelete = async () => {
-    const response = await fetch(`/api/historicalRecords?id=${id}`, {
+    const request = fetch(`/api/historicalRecords?id=${id}`, {
       method: "DELETE",
+    }).then((response) => {
+      if (!response.ok) {
+        throw new Error("Failed to delete record");
+      }
+      return response;
     });
 
-    if (!response.ok) {
-      throw new Error("Failed to delete record");
+    toast.promise(request, {
+      loading: "Deleting record..",
+      success: "Record successfully deleted.",
+      error: "The record could not be deleted. Please try again.",
+    });
+    try {
+      await request;
+      router.push(redirectUrl);
+    } catch (error) {
+      console.error(error);
     }
-
-    window.location.href = redirectUrl;
   };
 
   return (

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { API_URL } from "@/app/lib/api";
+import { Spinner } from "@/components/ui/spinner";
 
 type Props = {
   recordId: string;
@@ -10,7 +11,8 @@ type Props = {
 
 export function TranscriptionView({ recordId }: Props) {
   const [text, setText] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -32,12 +34,15 @@ export function TranscriptionView({ recordId }: Props) {
             ? record.extracted_text
             : "",
         );
-        setError(null);
-      } catch {
+        setError(false);
+      } catch (err) {
         if (!controller.signal.aborted) {
-          setError(
-            "Could not load the transcription. Check that the backend is running.",
-          );
+          console.error(err);
+          setError(true);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
         }
       }
     }
@@ -46,23 +51,32 @@ export function TranscriptionView({ recordId }: Props) {
     return () => controller.abort();
   }, [recordId]);
 
-  return (
-    <CardContent>
-      {error ? (
+  function renderContent() {
+    if (loading) {
+      return <Spinner className="size-8" />;
+    }
+
+    if (error) {
+      return (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          Could not load the transcription. Check that the backend is running.
         </p>
-      ) : text === null ? (
-        <p className="text-sm text-muted-foreground">Loading transcription…</p>
-      ) : text.trim() ? (
-        <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7">
-          {text}
-        </pre>
-      ) : (
+      );
+    }
+
+    if (!text?.trim()) {
+      return (
         <p className="text-sm text-muted-foreground">
           No text was recognized in this image.
         </p>
-      )}
-    </CardContent>
-  );
+      );
+    }
+
+    return (
+      <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7">
+        {text}
+      </pre>
+    );
+  }
+  return <CardContent>{renderContent()}</CardContent>;
 }

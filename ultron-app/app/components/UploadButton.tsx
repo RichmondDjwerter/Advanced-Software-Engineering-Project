@@ -2,6 +2,7 @@
 
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toast } from "@/components/ui/toast";
 
 export function UploadButton({
   onUploadSuccess = () => {},
@@ -9,23 +10,43 @@ export function UploadButton({
   onUploadSuccess?: () => void | Promise<void>;
 }) {
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const input = event.target;
+    const file = input.files?.[0];
 
-    if (!file || !file.type.startsWith("image/")) return;
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.add({
+        title: "Upload failed",
+        description: "Please select an image file.",
+        type: "error",
+      });
+      input.value = "";
+      return;
+    }
 
     const formData = new FormData();
     formData.append("image", file);
-
-    const response = await fetch("/api/historicalRecords", {
+    const upload = fetch("/api/historicalRecords", {
       method: "POST",
       body: formData,
+    }).then((response) => {
+      if (!response.ok) throw new Error("Failed to upload file");
+      return response;
     });
-
-    if (!response.ok) {
-      throw new Error("Failed to upload file");
+    toast.promise(upload, {
+      loading: `Uploading ${file.name}..`,
+      success: `${file.name} successfully uploaded.`,
+      error: `File couldn't be uploaded. Please try again.`,
+    });
+    try {
+      await upload;
+      await onUploadSuccess();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      input.value = "";
     }
-
-    await onUploadSuccess();
   };
 
   return (
