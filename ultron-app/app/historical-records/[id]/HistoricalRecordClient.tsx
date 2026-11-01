@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ReactNode, use, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { OriginalView } from "@/app/components/OriginalView";
 import { TranslationView } from "@/app/components/TranslationView";
 import { DeleteButton } from "@/app/components/DeleteButton";
@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeftIcon, EditIcon } from "lucide-react";
 import { notFound } from "next/navigation";
-import { TranscriptionView } from "@/app/components/TranscriptionView";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/toast";
 
 export default function HistoricalRecordClient({
   id,
@@ -29,6 +30,14 @@ export default function HistoricalRecordClient({
 
   const extension = name.match(/\.[^./]+$/)?.[0] ?? "";
   const editableName = extension ? name.slice(0, -extension.length) : name;
+
+  const showError = (description: string) => {
+    toast.add({
+      title: "Error",
+      description,
+      type: "error",
+    });
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -57,7 +66,7 @@ export default function HistoricalRecordClient({
       } catch (error) {
         if (controller.signal.aborted) return;
 
-        setError(
+        showError(
           error instanceof Error
             ? error.message
             : "Failed to load historical record.",
@@ -97,12 +106,12 @@ export default function HistoricalRecordClient({
     const trimmedName = editedName.trim();
 
     if (!trimmedName) {
-      setError("The filename cannot be empty.");
+      showError("The filename cannot be empty.");
       return;
     }
 
     if (trimmedName.length > 255 - extension.length) {
-      setError(
+      showError(
         `The filename is too long. Maximum length is ${
           255 - extension.length
         } characters.`,
@@ -140,16 +149,19 @@ export default function HistoricalRecordClient({
       setName(newName);
       setEditing(false);
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to rename record.",
-      );
+      console.error(error);
+      showError("The record could not be renamed. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <p>Loading record(s)...</p>;
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Spinner className="size-8" />
+      </div>
+    );
   }
 
   if (error && !name) {
@@ -229,12 +241,6 @@ export default function HistoricalRecordClient({
 
         <DeleteButton id={id} redirectUrl="/historical-records" />
       </div>
-
-      {error && (
-        <p role="alert" className="mt-2 text-sm text-destructive">
-          {error}
-        </p>
-      )}
 
       <div className="flex flex-1 flex-col justify-center gap-10 pb-20">
         <div className="grid gap-4 lg:grid-cols-2">
