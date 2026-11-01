@@ -24,8 +24,9 @@ export async function POST(request: Request) {
     body: formData,
   });
   if (!res.ok) {
+    const body = await res.json().catch(() => null);
     return NextResponse.json(
-      { error: "Failed to add historical record" },
+      { error: body?.detail ?? "Failed to add historical record" },
       { status: res.status },
     );
   }
