@@ -31,6 +31,14 @@ export default function HistoricalRecordClient({
   const extension = name.match(/\.[^./]+$/)?.[0] ?? "";
   const editableName = extension ? name.slice(0, -extension.length) : name;
 
+  const showError = (description: string) => {
+    toast.add({
+      title: "Error",
+      description,
+      type: "error",
+    });
+  };
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -58,7 +66,7 @@ export default function HistoricalRecordClient({
       } catch (error) {
         if (controller.signal.aborted) return;
 
-        setError(
+        showError(
           error instanceof Error
             ? error.message
             : "Failed to load historical record.",
@@ -98,12 +106,12 @@ export default function HistoricalRecordClient({
     const trimmedName = editedName.trim();
 
     if (!trimmedName) {
-      setError("The filename cannot be empty.");
+      showError("The filename cannot be empty.");
       return;
     }
 
     if (trimmedName.length > 255 - extension.length) {
-      setError(
+      showError(
         `The filename is too long. Maximum length is ${
           255 - extension.length
         } characters.`,
@@ -142,11 +150,7 @@ export default function HistoricalRecordClient({
       setEditing(false);
     } catch (error) {
       console.error(error);
-      toast.add({
-        title: "Rename failed",
-        description: "The record could not be renamed. Please try again.",
-        type: "error",
-      });
+      showError("The record could not be renamed. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -237,12 +241,6 @@ export default function HistoricalRecordClient({
 
         <DeleteButton id={id} redirectUrl="/historical-records" />
       </div>
-
-      {error && (
-        <p role="alert" className="mt-2 text-sm text-destructive">
-          {error}
-        </p>
-      )}
 
       <div className="flex flex-1 flex-col justify-center gap-10 pb-20">
         <div className="grid gap-4 lg:grid-cols-2">
