@@ -242,8 +242,8 @@ export default function HistoricalRecordClient({
         <DeleteButton id={id} redirectUrl="/historical-records" />
       </div>
 
-      <div className="flex flex-1 flex-col justify-center gap-10 pb-20">
-        <div className="grid gap-4 lg:grid-cols-2">
+      <div className="flex flex-1 flex-col justify-start gap-10 pt-4">
+        <div className="grid auto-rows-[26rem] gap-6 lg:auto-rows-[clamp(24rem,58vh,34rem)] lg:grid-cols-2">
           <OriginalView id={id} />
           <TranslationView recordId={id} />
         </div>
