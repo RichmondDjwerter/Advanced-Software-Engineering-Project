@@ -45,6 +45,42 @@ def fake_ocr(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(main, "transcribe_image", lambda image_bytes: "fake text")
 
 
+@pytest.fixture(autouse=True)
+def fake_translation(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Avoid loading the real translation model in tests.
+    monkeypatch.setattr(
+        main, "translate_text", lambda text, language=None: f"translated: {text}"
+    )
+
+
+def test_upload_translates_extracted_text(client: TestClient) -> None:
+    response = client.post(
+        "/historical_records",
+        files={"image": ("record.png", PNG_BYTES, "image/png")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["translated_text"] == "translated: fake text"
+
+
+def test_upload_succeeds_when_translation_fails(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken(text: str, language: str | None = None) -> str:
+        raise RuntimeError("model missing")
+
+    monkeypatch.setattr(main, "translate_text", broken)
+
+    response = client.post(
+        "/historical_records",
+        files={"image": ("record.png", PNG_BYTES, "image/png")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["extracted_text"] == "fake text"
+    assert response.json()["translated_text"] is None
+
+
 def test_upload_image_creates_historical_record(
     client: TestClient, tmp_path: Path
 ) -> None:
