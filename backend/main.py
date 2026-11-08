@@ -75,9 +75,11 @@ app.mount(
 )
 
 
-class HistoricalRecordCreate(BaseModel):
-    name: str
-    description: str | None = None
+class HistoricalRecordUpdate(BaseModel):
+    # Only the fields that are sent are changed.
+    name: str | None = None
+    extracted_text: str | None = None
+    translated_text: str | None = None
 
 
 # Classes for Chat
@@ -335,7 +337,7 @@ async def create_historical_record(
 @app.put("/historical_records/{record_id}")
 def update_historical_record(
     record_id: str,
-    record_update: HistoricalRecordCreate,
+    record_update: HistoricalRecordUpdate,
     db: Session = Depends(get_db),
 ):
     record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
@@ -343,7 +345,13 @@ def update_historical_record(
     if not record:
         raise HTTPException(status_code=404, detail="Historical record not found")
 
-    record.name = record_update.name
+    changes = record_update.model_dump(exclude_unset=True)
+
+    if "name" in changes and not changes["name"]:
+        raise HTTPException(status_code=422, detail="The name cannot be empty.")
+
+    for field, value in changes.items():
+        setattr(record, field, value)
 
     db.commit()
     db.refresh(record)
@@ -352,6 +360,8 @@ def update_historical_record(
         "id": record.id,
         "name": record.name,
         "description": record.description,
+        "extracted_text": record.extracted_text,
+        "translated_text": record.translated_text,
         "created_at": record.created_at.isoformat(),
         "updated_at": record.updated_at.isoformat(),
     }

@@ -151,3 +151,64 @@ def test_chat_empty_message_returns_400(client: TestClient) -> None:
     )
 
     assert response.status_code == 400
+
+
+def upload_record(client: TestClient) -> str:
+    response = client.post(
+        "/historical_records",
+        files={"image": ("record.png", PNG_BYTES, "image/png")},
+    )
+    return response.json()["id"]
+
+
+def test_update_record_saves_texts_without_touching_other_fields(
+    client: TestClient,
+) -> None:
+    record_id = upload_record(client)
+
+    response = client.put(
+        f"/historical_records/{record_id}",
+        json={"extracted_text": "edited transcription"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["extracted_text"] == "edited transcription"
+    assert response.json()["name"] == "record.png"
+
+    response = client.put(
+        f"/historical_records/{record_id}",
+        json={"translated_text": "edited translation"},
+    )
+    record = client.get(f"/historical_records/{record_id}").json()
+
+    assert response.status_code == 200
+    assert record["extracted_text"] == "edited transcription"
+    assert record["translated_text"] == "edited translation"
+
+
+def test_update_record_can_rename_and_clear_text(client: TestClient) -> None:
+    record_id = upload_record(client)
+    client.put(f"/historical_records/{record_id}", json={"extracted_text": "x"})
+
+    response = client.put(
+        f"/historical_records/{record_id}",
+        json={"name": "renamed.png", "extracted_text": ""},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "renamed.png"
+    assert response.json()["extracted_text"] == ""
+
+
+def test_update_record_rejects_empty_name(client: TestClient) -> None:
+    record_id = upload_record(client)
+
+    response = client.put(f"/historical_records/{record_id}", json={"name": ""})
+
+    assert response.status_code == 422
+
+
+def test_update_missing_record_returns_404(client: TestClient) -> None:
+    response = client.put("/historical_records/missing", json={"name": "a.png"})
+
+    assert response.status_code == 404
