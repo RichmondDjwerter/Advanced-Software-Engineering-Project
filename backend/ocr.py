@@ -1,3 +1,6 @@
+import json
+import subprocess
+import tempfile
 from functools import lru_cache
 from io import BytesIO
 from itertools import pairwise
@@ -7,10 +10,6 @@ import numpy as np
 import torch
 from PIL import Image, ImageOps
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
-import subprocess
-import tempfile
-import xml.etree.ElementTree as ET
-import json
 
 # Line crops are written here for debugging (folder is git-ignored).
 debug_dir = Path("debug_ocr_lines")
@@ -181,8 +180,12 @@ def split_page_into_lines(image: Image.Image) -> list[Image.Image]:
         result = subprocess.run(
             [
                 str(KRAKEN_BIN),
-                "-i", str(image_path), str(layout_path),
-                "-n", "segment", "-bl",
+                "-i",
+                str(image_path),
+                str(layout_path),
+                "-n",
+                "segment",
+                "-bl",
             ],
             capture_output=True,
             text=True,

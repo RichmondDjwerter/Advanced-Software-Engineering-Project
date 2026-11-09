@@ -75,9 +75,11 @@ app.mount(
 )
 
 
-class HistoricalRecordCreate(BaseModel):
-    name: str
-    description: str | None = None
+class HistoricalRecordUpdate(BaseModel):
+    # Only the fields that are sent are changed.
+    name: str | None = None
+    extracted_text: str | None = None
+    translated_text: str | None = None
 
 
 # Classes for Chat
@@ -198,7 +200,7 @@ async def translate_historical_record(
     return {"id": record.id, "translated_text": record.translated_text}
 
 
-# UPLOAD A HISTORICAL DOCUMENT AND RUN OCR
+# UPLOAD A HISTORICAL DOCUMENT, RUN OCR AND TRANSLATE IT
 
 
 @app.post("/historical_records")
@@ -276,11 +278,27 @@ async def create_historical_record(
             ),
         ) from error
 
+    # Translate the extracted text. A failed translation does not fail the
+    # upload: the record is saved without a translation.
+
+    translated_text = None
+
+    if extracted_text.strip():
+        try:
+            translated_text = await run_in_threadpool(
+                translate_text,
+                extracted_text,
+                None,
+            )
+        except Exception:
+            logger.exception("Translation failed. Saving without translation.")
+
     # Create the database record.
 
     new_record = HistoricalRecord(
         name=original_name,
         extracted_text=extracted_text,
+        translated_text=translated_text,
         description=None,
     )
 
@@ -335,7 +353,7 @@ async def create_historical_record(
 @app.put("/historical_records/{record_id}")
 def update_historical_record(
     record_id: str,
-    record_update: HistoricalRecordCreate,
+    record_update: HistoricalRecordUpdate,
     db: Session = Depends(get_db),
 ):
     record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
@@ -343,7 +361,13 @@ def update_historical_record(
     if not record:
         raise HTTPException(status_code=404, detail="Historical record not found")
 
-    record.name = record_update.name
+    changes = record_update.model_dump(exclude_unset=True)
+
+    if "name" in changes and not changes["name"]:
+        raise HTTPException(status_code=422, detail="The name cannot be empty.")
+
+    for field, value in changes.items():
+        setattr(record, field, value)
 
     db.commit()
     db.refresh(record)
@@ -352,6 +376,8 @@ def update_historical_record(
         "id": record.id,
         "name": record.name,
         "description": record.description,
+        "extracted_text": record.extracted_text,
+        "translated_text": record.translated_text,
         "created_at": record.created_at.isoformat(),
         "updated_at": record.updated_at.isoformat(),
     }

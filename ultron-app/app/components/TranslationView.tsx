@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TranscriptionView } from "@/app/components/TranscriptionView";
 import { EnglishTranslation } from "@/app/components/EnglishTranslation";
@@ -13,21 +13,23 @@ export function TranslationView({ recordId }: Props) {
     <Card className="h-full">
       <Tabs
         defaultValue="transcription"
-        className="flex-1 gap-(--card-spacing)"
+        className="min-h-0 flex-1 gap-(--card-spacing)"
       >
         <CardHeader>
           <TabsList variant="line" className="-my-[5px] -ml-[9px]">
-            <TabsTrigger value="transcription">Transcription</TabsTrigger>
-            <TabsTrigger value="translation">Translation</TabsTrigger>
+            <TabsTrigger value="transcription" className="after:bg-coral">
+              Transcription
+            </TabsTrigger>
+            <TabsTrigger value="translation" className="after:bg-coral">
+              Translation
+            </TabsTrigger>
           </TabsList>
         </CardHeader>
-        <TabsContent value="transcription" className="flex">
-          <CardContent className="flex min-h-40 flex-1 items-center justify-center">
-            <TranscriptionView recordId={recordId} />
-          </CardContent>
+        <TabsContent value="transcription" className="flex min-h-0 flex-col">
+          <TranscriptionView recordId={recordId} />
         </TabsContent>
 
-        <TabsContent value="translation" className="flex">
+        <TabsContent value="translation" className="flex min-h-0 flex-col">
           <EnglishTranslation recordId={recordId} />
         </TabsContent>
       </Tabs>

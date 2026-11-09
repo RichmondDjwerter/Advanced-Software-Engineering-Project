@@ -6,10 +6,17 @@ import {
   type ReactNode,
   type SubmitEvent,
 } from "react";
-import { ArrowUpIcon } from "lucide-react";
+import {
+  ArrowUpIcon,
+  DatabaseIcon,
+  ListIcon,
+  MessagesSquareIcon,
+  SparklesIcon,
+} from "lucide-react";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -28,10 +35,17 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { ChatMessage, ChatRole } from "@/app/types/chat";
 
 /** One message with its avatar, vertically centered. User messages are mirrored to the right. */
+const suggestions = [
+  { icon: SparklesIcon, label: "Summarize this document" },
+  { icon: ListIcon, label: "What are the key points?" },
+  { icon: DatabaseIcon, label: "Extract relevant data" },
+];
+
 function ChatRow({ role, children }: { role: ChatRole; children: ReactNode }) {
   const isUser = role === "user";
   return (
@@ -163,8 +177,26 @@ export function ChatClient({
     <MessageScrollerProvider autoScroll>
       <Card className="gap-0">
         <CardHeader>
-          <CardTitle>Chat</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <MessagesSquareIcon className="size-5 text-coral" />
+            Chat
+          </CardTitle>
+          <CardDescription>Ask a question about this document.</CardDescription>
         </CardHeader>
+        {/* Suggestions are placeholders for now and do not do anything yet. */}
+        <div className="flex flex-wrap gap-2 px-(--card-spacing) pt-(--card-spacing)">
+          {suggestions.map(({ icon: Icon, label }) => (
+            <Button
+              key={label}
+              type="button"
+              variant="outline"
+              className="rounded-full"
+            >
+              <Icon data-icon="inline-start" />
+              {label}
+            </Button>
+          ))}
+        </div>
         {hasMessages && (
           <CardContent className="flex max-h-[30vh] flex-col overflow-hidden p-0">
             <MessageScroller>
@@ -200,7 +232,7 @@ export function ChatClient({
                 name="message"
                 id="chat-message"
                 aria-label="Message"
-                placeholder="Ask a question about this document."
+                placeholder="Ask your question..."
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={onKeyDown}
@@ -211,7 +243,7 @@ export function ChatClient({
                   variant="default"
                   size="icon-sm"
                   disabled={!canSend}
-                  className="ml-auto"
+                  className="ml-auto bg-coral text-white hover:bg-coral/85"
                 >
                   <ArrowUpIcon />
                   <span className="sr-only">Send</span>

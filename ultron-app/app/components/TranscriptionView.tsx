@@ -2,8 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { CardContent } from "@/components/ui/card";
-import { API_URL } from "@/app/lib/api";
+import {
+  API_URL,
+  translateHistoricalRecord,
+  updateHistoricalRecord,
+} from "@/app/lib/api";
+import { EditMode } from "@/app/components/EditMode";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/toast";
 
 type Props = {
   recordId: string;
@@ -53,30 +59,50 @@ export function TranscriptionView({ recordId }: Props) {
 
   function renderContent() {
     if (loading) {
-      return <Spinner className="size-8" />;
+      return (
+        <CardContent className="flex min-h-0 flex-1 flex-col">
+          <div className="flex flex-1 items-center justify-center">
+            <Spinner className="size-8" />
+          </div>
+        </CardContent>
+      );
     }
 
     if (error) {
       return (
-        <p role="alert" className="text-sm text-destructive">
-          Could not load the transcription. Check that the backend is running.
-        </p>
-      );
-    }
-
-    if (!text.trim()) {
-      return (
-        <p className="text-sm text-muted-foreground">
-          No text was recognized in this image.
-        </p>
+        <CardContent className="flex min-h-0 flex-1 flex-col">
+          <p role="alert" className="m-auto text-sm text-destructive">
+            Could not load the transcription. Check that the backend is running.
+          </p>
+        </CardContent>
       );
     }
 
     return (
-      <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7">
-        {text}
-      </pre>
+      <EditMode
+        title="Transcription"
+        text={text}
+        emptyMessage="No text was recognized in this image."
+        onSave={async (edited) => {
+          await updateHistoricalRecord(recordId, { extracted_text: edited });
+          setText(edited);
+
+          // The translation follows the transcription.
+          try {
+            await translateHistoricalRecord(recordId, edited);
+          } catch (err) {
+            console.error(err);
+            toast.add({
+              title: "Translation not updated",
+              description:
+                "The transcription was saved, but the translation could not be updated.",
+              type: "error",
+            });
+          }
+        }}
+      />
     );
   }
-  return <CardContent>{renderContent()}</CardContent>;
+
+  return renderContent();
 }
