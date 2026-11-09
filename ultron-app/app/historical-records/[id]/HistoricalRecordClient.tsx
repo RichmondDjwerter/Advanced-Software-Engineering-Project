@@ -25,6 +25,7 @@ export default function HistoricalRecordClient({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [activeLine, setActiveLine] = useState<number | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -244,8 +245,16 @@ export default function HistoricalRecordClient({
 
       <div className="flex flex-1 flex-col justify-start gap-10 pt-4">
         <div className="grid auto-rows-[26rem] gap-6 lg:auto-rows-[clamp(24rem,58vh,34rem)] lg:grid-cols-2">
-          <OriginalView id={id} />
-          <TranslationView recordId={id} />
+          <OriginalView
+            id={id}
+            activeLine={activeLine}
+            onLineHover={setActiveLine}
+          />
+          <TranslationView
+            recordId={id}
+            activeLine={activeLine}
+            onLineHover={setActiveLine}
+          />
         </div>
         {chat}
       </div>

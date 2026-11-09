@@ -13,9 +13,15 @@ import { toast } from "@/components/ui/toast";
 
 type Props = {
   recordId: string;
+  activeLine: number | null;
+  onLineHover: (line: number | null) => void;
 };
 
-export function TranscriptionView({ recordId }: Props) {
+export function TranscriptionView({
+  recordId,
+  activeLine,
+  onLineHover,
+}: Props) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -100,6 +106,20 @@ export function TranscriptionView({ recordId }: Props) {
             });
           }
         }}
+        renderText={() =>
+          text.split(/\r?\n/).map((line, index) => (
+            <span
+              key={index}
+              className={`block rounded-sm transition-colors hover:bg-coral/20 ${
+                activeLine === index ? "bg-coral/20" : ""
+              }`}
+              onMouseEnter={() => onLineHover(index)}
+              onMouseLeave={() => onLineHover(null)}
+            >
+              {line || " "}
+            </span>
+          ))
+        }
       />
     );
   }

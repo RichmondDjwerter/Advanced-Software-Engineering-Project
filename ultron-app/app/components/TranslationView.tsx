@@ -5,10 +5,12 @@ import { EnglishTranslation } from "@/app/components/EnglishTranslation";
 
 type Props = {
   recordId: string;
+  activeLine: number | null;
+  onLineHover: (line: number | null) => void;
 };
 
 // Component to display the transcription and translation of a historical record
-export function TranslationView({ recordId }: Props) {
+export function TranslationView({ recordId, activeLine, onLineHover }: Props) {
   return (
     <Card className="h-full">
       <Tabs
@@ -26,7 +28,11 @@ export function TranslationView({ recordId }: Props) {
           </TabsList>
         </CardHeader>
         <TabsContent value="transcription" className="flex min-h-0 flex-col">
-          <TranscriptionView recordId={recordId} />
+          <TranscriptionView
+            recordId={recordId}
+            activeLine={activeLine}
+            onLineHover={onLineHover}
+          />
         </TabsContent>
 
         <TabsContent value="translation" className="flex min-h-0 flex-col">

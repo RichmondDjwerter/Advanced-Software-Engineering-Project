@@ -49,6 +49,10 @@ class HistoricalRecord(Base):
         nullable=True,
     )
 
+    line_data: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_width: Mapped[int | None] = mapped_column(nullable=True)
+    image_height: Mapped[int | None] = mapped_column(nullable=True)
+
     # chat messages of the record, oldest first
     chat_messages: Mapped[list[ChatMessage]] = relationship(
         back_populates="historical_record",
