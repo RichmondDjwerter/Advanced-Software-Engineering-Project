@@ -15,7 +15,7 @@ export function ImageWithZoom({ id, name }: Props) {
 
   return (
     <CardContent>
-      <div className="flex aspect-video items-center justify-center rounded-lg bg-muted text-muted-foreground">
+      <div className="flex aspect-video items-center justify-center rounded-lg bg-muted text-muted-foreground overflow-auto">
         {imageNotFound ? (
           <span>Image not found</span>
         ) : (
@@ -33,7 +33,7 @@ export function ImageWithZoom({ id, name }: Props) {
               height={0}
               sizes="100vw"
               loading="eager"
-              className="h-full w-full rounded-lg object-contain"
+              className="w-full rounded-lg object-contain"
               onError={() => setImageNotFound(true)}
             />
           </button>
