@@ -48,7 +48,11 @@ export function OriginalView({ id }: OriginalViewProps) {
         <CardTitle>Original</CardTitle>
       </CardHeader>
 
-      {record && <ImageWithZoom key={id} id={id} name={record.name} />}
+      {record && (
+        <div className="flex min-h-0 flex-1 flex-col justify-center">
+          <ImageWithZoom key={id} id={id} name={record.name} />
+        </div>
+      )}
     </Card>
   );
 }

@@ -14,8 +14,8 @@ export function ImageWithZoom({ id, name }: Props) {
   const [imageZoomed, setImageZoomed] = useState(false);
 
   return (
-    <CardContent className="flex min-h-0 flex-1 flex-col">
-      <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+    <CardContent>
+      <div className="flex aspect-video items-center justify-center rounded-lg bg-muted text-muted-foreground">
         {imageNotFound ? (
           <span>Image not found</span>
         ) : (
