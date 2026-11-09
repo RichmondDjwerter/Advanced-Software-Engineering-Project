@@ -42,7 +42,11 @@ export function DeleteButton({
     });
     try {
       await request;
-      router.push(redirectUrl);
+      if (window.location.pathname === redirectUrl) {
+        window.location.reload();
+      } else {
+        router.push(redirectUrl);
+      }
     } catch (error) {
       console.error(error);
     }
