@@ -181,8 +181,12 @@ def split_page_into_lines(image: Image.Image) -> list[Image.Image]:
         result = subprocess.run(
             [
                 str(KRAKEN_BIN),
-                "-i", str(image_path), str(layout_path),
-                "-n", "segment", "-bl",
+                "-i",
+                str(image_path),
+                str(layout_path),
+                "-n",
+                "segment",
+                "-bl",
             ],
             capture_output=True,
             text=True,
