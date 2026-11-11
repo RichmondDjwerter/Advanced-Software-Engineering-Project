@@ -1,4 +1,6 @@
 import json
+import logging
+import os
 import subprocess
 import tempfile
 from dataclasses import dataclass
@@ -6,21 +8,66 @@ from functools import lru_cache
 from io import BytesIO
 from itertools import pairwise
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import torch
 from PIL import Image, ImageOps
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 
+logger = logging.getLogger(__name__)
+
 # Line crops are written here for debugging (folder is git-ignored).
 debug_dir = Path("debug_ocr_lines")
 
-# General medieval model, fine-tuned on all scripts of CATMuS Medieval.
-# Benchmarked by the team on 300 CATMuS test lines: about 19 % CER,
-# better than Qwen2-VL-2B (27 %). The "cursiva" variant only covers one script.
-MODEL_ID = "medieval-data/trocr-medieval-base"
+# ---------------------------------------------------------------------------
+# Configuration
+#
+# The production choices below come from the team's model contest
+# (notebooks/ultron_ocr_contest.ipynb and the MLflow experiments): on the same
+# 100 CATMuS lines, trocr-medieval-base reached 19.4 % CER at about 1 s per
+# line on 1.4 GB of GPU. MEDUSA 0.2 reached 8.9 % but needs a 14 GB GPU and
+# about 7 s per line, so it is the main candidate, not the default.
+# Each value can be overridden with an environment variable, so switching
+# between TrOCR-type models is a configuration change, not a code change.
+# ---------------------------------------------------------------------------
 
-KRAKEN_BIN = Path(__file__).resolve().parent / ".venv-kraken" / "bin" / "kraken"
+DEFAULT_MODEL_ID = "medieval-data/trocr-medieval-base"
+MODEL_ID = os.environ.get("OCR_MODEL_ID") or DEFAULT_MODEL_ID
+
+# "kraken": Kraken baseline segmentation (needs the Kraken executable)
+# "profile": built-in dark-pixel profile splitter (no extra dependency)
+# "auto": Kraken when it is installed, otherwise the built-in splitter
+SEGMENTERS = ("auto", "kraken", "profile")
+SEGMENTER = os.environ.get("OCR_SEGMENTER") or "auto"
+
+KRAKEN_BIN = Path(
+    os.environ.get(
+        "OCR_KRAKEN_BIN",
+        str(Path(__file__).resolve().parent / ".venv-kraken" / "bin" / "kraken"),
+    )
+)
+
+# Decoding settings validated on the benchmark: beam search avoids the
+# "a a a a ..." repetition loops seen with greedy decoding.
+GENERATION_KWARGS: dict[str, Any] = {
+    "max_new_tokens": 128,
+    "num_beams": 4,
+    "no_repeat_ngram_size": 4,
+}
+
+
+def ocr_config() -> dict[str, Any]:
+    """Settings currently used by the OCR, for logs and experiment tracking."""
+    return {
+        "model_id": MODEL_ID,
+        "segmenter": SEGMENTER,
+        "kraken_available": KRAKEN_BIN.is_file(),
+        **GENERATION_KWARGS,
+    }
+
+
+Box = tuple[int, int, int, int]  # (left, top, right, bottom) in page pixels
 
 
 @dataclass
@@ -172,9 +219,17 @@ def find_line_boxes(image: Image.Image) -> list[tuple[int, int, int, int]]:
     return boxes
 
 
-def split_page_into_lines(
-    image: Image.Image,
-) -> list[tuple[Image.Image, tuple[int, int, int, int]]]:
+def whole_page(image: Image.Image) -> list[tuple[Image.Image, Box]]:
+    return [(image, (0, 0, image.width, image.height))]
+
+
+def split_with_profile(image: Image.Image) -> list[tuple[Image.Image, Box]]:
+    """Built-in splitter: one (crop, box) per line found by find_line_boxes."""
+    boxes = find_line_boxes(image)
+    return [(image.crop(box), box) for box in boxes] or whole_page(image)
+
+
+def split_with_kraken(image: Image.Image) -> list[tuple[Image.Image, Box]]:
     """Use Kraken to split a page into line crops, preserving its reading order."""
     if not KRAKEN_BIN.is_file():
         raise RuntimeError(f"Kraken executable not found: {KRAKEN_BIN}")
@@ -209,7 +264,7 @@ def split_page_into_lines(
             raise RuntimeError("Kraken did not create its layout JSON file.")
 
         layout = json.loads(layout_path.read_text())
-        crops: list[tuple[Image.Image, tuple[int, int, int, int]]] = []
+        crops: list[tuple[Image.Image, Box]] = []
 
         # Keep Kraken's order: sorting by y would interleave columns.
         for line in layout.get("lines", []):
@@ -229,11 +284,30 @@ def split_page_into_lines(
             bottom = min(image.height, int(max(ys)) + 1 + pad_y)
 
             if right > left and bottom > top:
-                crops.append(
-                    (image.crop((left, top, right, bottom)), (left, top, right, bottom))
-                )
+                box = (left, top, right, bottom)
+                crops.append((image.crop(box), box))
 
-        return crops or [(image, (0, 0, image.width, image.height))]
+        return crops or whole_page(image)
+
+
+def split_page_into_lines(image: Image.Image) -> list[tuple[Image.Image, Box]]:
+    """Split a page into (line image, box) pairs with the configured segmenter."""
+    if SEGMENTER not in SEGMENTERS:
+        raise ValueError(
+            f"OCR_SEGMENTER must be one of {SEGMENTERS}, got {SEGMENTER!r}"
+        )
+    if SEGMENTER == "profile":
+        return split_with_profile(image)
+    if SEGMENTER == "kraken":
+        return split_with_kraken(image)
+
+    # auto: prefer Kraken, but keep the app working where it is not installed
+    if KRAKEN_BIN.is_file():
+        try:
+            return split_with_kraken(image)
+        except RuntimeError as error:
+            logger.warning("Kraken failed, using the built-in splitter: %s", error)
+    return split_with_profile(image)
 
 
 # ---------------------------------------------------------------------------
@@ -241,9 +315,20 @@ def split_page_into_lines(
 # ---------------------------------------------------------------------------
 
 
-def transcribe_image(image_bytes: bytes) -> OCRResult:
+def read_line(line: Image.Image) -> str:
+    """Transcribe one line image with the configured model."""
     processor, model, device = load_model()
+    pixel_values = processor(
+        images=line.convert("RGB"), return_tensors="pt"
+    ).pixel_values.to(device)
+    with torch.inference_mode():
+        generated_ids = model.generate(pixel_values, **GENERATION_KWARGS)
+    return str(
+        processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+    ).strip()
 
+
+def transcribe_image(image_bytes: bytes) -> OCRResult:
     with Image.open(BytesIO(image_bytes)) as source:
         image = ImageOps.exif_transpose(source).convert("RGB")
 
@@ -260,28 +345,11 @@ def transcribe_image(image_bytes: bytes) -> OCRResult:
 
     for index, (line, box) in enumerate(lines):
         line.save(debug_dir / f"line_{index:02d}.png")
-
-        pixel_values = processor(
-            images=line,
-            return_tensors="pt",
-        ).pixel_values.to(device)
-
-        with torch.inference_mode():
-            generated_ids = model.generate(
-                pixel_values,
-                max_new_tokens=128,
-                num_beams=4,
-                no_repeat_ngram_size=4,
-            )
-
-        text = processor.batch_decode(
-            generated_ids,
-            skip_special_tokens=True,
-        )[0].strip()
-
+        text = read_line(line)
         if text:
             recognized_lines.append(text)
             left, top, right, bottom = box
+            # Position of the line as a fraction of the page, for line highlighting.
             line_data.append(
                 {
                     "text": text,
