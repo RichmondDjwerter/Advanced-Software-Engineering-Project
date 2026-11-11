@@ -26,6 +26,7 @@ export default function HistoricalRecordClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [activeLine, setActiveLine] = useState<number | null>(null);
+  const [selectedLine, setSelectedLine] = useState<number | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -249,11 +250,15 @@ export default function HistoricalRecordClient({
             id={id}
             activeLine={activeLine}
             onLineHover={setActiveLine}
+            selectedLine={selectedLine}
+            onLineClick={setSelectedLine}
           />
           <TranslationView
             recordId={id}
             activeLine={activeLine}
             onLineHover={setActiveLine}
+            selectedLine={selectedLine}
+            onLineClick={setSelectedLine}
           />
         </div>
         {chat}

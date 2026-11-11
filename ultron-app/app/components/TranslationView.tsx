@@ -7,10 +7,18 @@ type Props = {
   recordId: string;
   activeLine: number | null;
   onLineHover: (line: number | null) => void;
+  selectedLine: number | null;
+  onLineClick: (line: number) => void;
 };
 
 // Component to display the transcription and translation of a historical record
-export function TranslationView({ recordId, activeLine, onLineHover }: Props) {
+export function TranslationView({
+  recordId,
+  activeLine,
+  onLineHover,
+  selectedLine,
+  onLineClick,
+}: Props) {
   return (
     <Card className="h-full">
       <Tabs
@@ -32,6 +40,8 @@ export function TranslationView({ recordId, activeLine, onLineHover }: Props) {
             recordId={recordId}
             activeLine={activeLine}
             onLineHover={onLineHover}
+            selectedLine={selectedLine}
+            onLineClick={onLineClick}
           />
         </TabsContent>
 

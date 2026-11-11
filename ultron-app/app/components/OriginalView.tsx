@@ -10,6 +10,8 @@ type OriginalViewProps = {
   id: string;
   activeLine: number | null;
   onLineHover: (line: number | null) => void;
+  selectedLine: number | null;
+  onLineClick: (line: number) => void;
 };
 
 // Component to display the image of a historical record
@@ -17,6 +19,8 @@ export function OriginalView({
   id,
   activeLine,
   onLineHover,
+  selectedLine,
+  onLineClick,
 }: OriginalViewProps) {
   const [record, setRecord] = useState<HistoricalRecord | null>(null);
 
@@ -65,6 +69,8 @@ export function OriginalView({
             imageHeight={record.image_height}
             activeLine={activeLine}
             onLineHover={onLineHover}
+            selectedLine={selectedLine}
+            onLineClick={onLineClick}
           />
         </div>
       )}

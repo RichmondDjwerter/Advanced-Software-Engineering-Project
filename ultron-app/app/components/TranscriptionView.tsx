@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CardContent } from "@/components/ui/card";
 import {
   API_URL,
@@ -15,16 +15,43 @@ type Props = {
   recordId: string;
   activeLine: number | null;
   onLineHover: (line: number | null) => void;
+  selectedLine: number | null;
+  onLineClick: (line: number) => void;
 };
 
 export function TranscriptionView({
   recordId,
   activeLine,
   onLineHover,
+  selectedLine,
+  onLineClick,
 }: Props) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const lineElements = useRef<(HTMLSpanElement | null)[]>([]);
+
+  useEffect(() => {
+    const line =
+      selectedLine === null ? null : lineElements.current[selectedLine];
+    const container = line?.closest<HTMLElement>(
+      '[data-slot="scroll-area-viewport"]',
+    );
+
+    if (!line || !container) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const lineRect = line.getBoundingClientRect();
+    const verticalOffset =
+      lineRect.top +
+      lineRect.height / 2 -
+      (containerRect.top + containerRect.height / 2);
+
+    container.scrollBy({
+      top: verticalOffset,
+      behavior: "smooth",
+    });
+  }, [selectedLine, text, loading]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -110,11 +137,15 @@ export function TranscriptionView({
           text.split(/\r?\n/).map((line, index) => (
             <span
               key={index}
+              ref={(element) => {
+                lineElements.current[index] = element;
+              }}
               className={`block rounded-sm transition-colors hover:bg-coral/20 ${
                 activeLine === index ? "bg-coral/20" : ""
               }`}
               onMouseEnter={() => onLineHover(index)}
               onMouseLeave={() => onLineHover(null)}
+              onClick={() => onLineClick(index)}
             >
               {line || " "}
             </span>
