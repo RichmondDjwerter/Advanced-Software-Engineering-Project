@@ -1,6 +1,7 @@
 import json
 import subprocess
 import tempfile
+from dataclasses import dataclass
 from functools import lru_cache
 from io import BytesIO
 from itertools import pairwise
@@ -20,6 +21,12 @@ debug_dir = Path("debug_ocr_lines")
 MODEL_ID = "medieval-data/trocr-medieval-base"
 
 KRAKEN_BIN = Path(__file__).resolve().parent / ".venv-kraken" / "bin" / "kraken"
+
+
+@dataclass
+class OCRResult:
+    text: str
+    lines: list[dict[str, float | str]]
 
 
 @lru_cache(maxsize=1)
@@ -165,7 +172,9 @@ def find_line_boxes(image: Image.Image) -> list[tuple[int, int, int, int]]:
     return boxes
 
 
-def split_page_into_lines(image: Image.Image) -> list[Image.Image]:
+def split_page_into_lines(
+    image: Image.Image,
+) -> list[tuple[Image.Image, tuple[int, int, int, int]]]:
     """Use Kraken to split a page into line crops, preserving its reading order."""
     if not KRAKEN_BIN.is_file():
         raise RuntimeError(f"Kraken executable not found: {KRAKEN_BIN}")
@@ -200,7 +209,7 @@ def split_page_into_lines(image: Image.Image) -> list[Image.Image]:
             raise RuntimeError("Kraken did not create its layout JSON file.")
 
         layout = json.loads(layout_path.read_text())
-        crops = []
+        crops: list[tuple[Image.Image, tuple[int, int, int, int]]] = []
 
         # Keep Kraken's order: sorting by y would interleave columns.
         for line in layout.get("lines", []):
@@ -220,9 +229,11 @@ def split_page_into_lines(image: Image.Image) -> list[Image.Image]:
             bottom = min(image.height, int(max(ys)) + 1 + pad_y)
 
             if right > left and bottom > top:
-                crops.append(image.crop((left, top, right, bottom)))
+                crops.append(
+                    (image.crop((left, top, right, bottom)), (left, top, right, bottom))
+                )
 
-        return crops or [image]
+        return crops or [(image, (0, 0, image.width, image.height))]
 
 
 # ---------------------------------------------------------------------------
@@ -230,7 +241,7 @@ def split_page_into_lines(image: Image.Image) -> list[Image.Image]:
 # ---------------------------------------------------------------------------
 
 
-def transcribe_image(image_bytes: bytes) -> str:
+def transcribe_image(image_bytes: bytes) -> OCRResult:
     processor, model, device = load_model()
 
     with Image.open(BytesIO(image_bytes)) as source:
@@ -244,9 +255,10 @@ def transcribe_image(image_bytes: bytes) -> str:
     for old_crop in debug_dir.glob("line_*.png"):
         old_crop.unlink()
 
-    recognized_lines = []
+    recognized_lines: list[str] = []
+    line_data: list[dict[str, float | str]] = []
 
-    for index, line in enumerate(lines):
+    for index, (line, box) in enumerate(lines):
         line.save(debug_dir / f"line_{index:02d}.png")
 
         pixel_values = processor(
@@ -269,5 +281,15 @@ def transcribe_image(image_bytes: bytes) -> str:
 
         if text:
             recognized_lines.append(text)
+            left, top, right, bottom = box
+            line_data.append(
+                {
+                    "text": text,
+                    "x": left / image.width,
+                    "y": top / image.height,
+                    "width": (right - left) / image.width,
+                    "height": (bottom - top) / image.height,
+                }
+            )
 
-    return "\n".join(recognized_lines)
+    return OCRResult("\n".join(recognized_lines), line_data)

@@ -26,6 +26,7 @@ type Props = {
   // Extra buttons next to Edit, hidden while editing.
   actions?: ReactNode;
   disabled?: boolean;
+  renderText?: () => ReactNode;
 };
 
 // Shows a text in a scroll area with an Edit button. Edit switches to a
@@ -38,6 +39,7 @@ export function EditMode({
   onSave,
   actions,
   disabled = false,
+  renderText,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -88,7 +90,7 @@ export function EditMode({
     return (
       <ScrollArea className="min-h-0 w-full flex-1">
         <p className="whitespace-pre-wrap break-words px-4 text-sm leading-7">
-          {text}
+          {renderText ? renderText() : text}
         </p>
       </ScrollArea>
     );

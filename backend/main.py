@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime
 from io import BytesIO
@@ -21,7 +22,7 @@ from starlette.concurrency import run_in_threadpool
 from chat_mock import get_mock_reply
 from database import Base, engine, get_db
 from models import HistoricalRecord
-from ocr import transcribe_image
+from ocr import OCRResult, transcribe_image
 from translation import translate_text
 
 Base.metadata.create_all(bind=engine)
@@ -111,24 +112,33 @@ def root():
 IMAGE_EXTENSIONS = {"image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp"}
 
 
+def record_response(record: HistoricalRecord):
+    try:
+        lines = json.loads(record.line_data) if record.line_data else []
+    except json.JSONDecodeError:
+        lines = []
+
+    return {
+        "id": record.id,
+        "name": record.name,
+        "description": record.description,
+        "extracted_text": record.extracted_text,
+        "translated_text": record.translated_text,
+        "lines": lines,
+        "image_width": record.image_width,
+        "image_height": record.image_height,
+        "created_at": record.created_at.isoformat(),
+        "updated_at": record.updated_at.isoformat(),
+    }
+
+
 @app.get("/historical_records")
 def get_historical_records(
     db: Session = Depends(get_db),
 ):
     records = db.query(HistoricalRecord).all()
 
-    return [
-        {
-            "id": record.id,
-            "name": record.name,
-            "description": record.description,
-            "extracted_text": record.extracted_text,
-            "translated_text": record.translated_text,
-            "created_at": record.created_at.isoformat(),
-            "updated_at": record.updated_at.isoformat(),
-        }
-        for record in records
-    ]
+    return [record_response(record) for record in records]
 
 
 @app.get("/historical_records/{record_id}")
@@ -144,15 +154,7 @@ def get_historical_record(
             detail="Historical record not found",
         )
 
-    return {
-        "id": record.id,
-        "name": record.name,
-        "description": record.description,
-        "extracted_text": record.extracted_text,
-        "translated_text": record.translated_text,
-        "created_at": record.created_at.isoformat(),
-        "updated_at": record.updated_at.isoformat(),
-    }
+    return record_response(record)
 
 
 # TRANSLATE THE EXTRACTED TEXT OF A RECORD INTO ENGLISH
@@ -243,6 +245,8 @@ async def create_historical_record(
                 )
 
             image_format = uploaded_image.format
+            image_width = uploaded_image.width
+            image_height = uploaded_image.height
 
             uploaded_image.verify()
 
@@ -262,7 +266,7 @@ async def create_historical_record(
     # Run TrOCR on the uploaded image.
 
     try:
-        extracted_text = await run_in_threadpool(
+        ocr_result = await run_in_threadpool(
             transcribe_image,
             image_bytes,
         )
@@ -277,6 +281,13 @@ async def create_historical_record(
                 "Check the backend model setup and try again."
             ),
         ) from error
+
+    if isinstance(ocr_result, OCRResult):
+        extracted_text = ocr_result.text
+        line_data = ocr_result.lines
+    else:
+        extracted_text = ocr_result
+        line_data = []
 
     # Translate the extracted text. A failed translation does not fail the
     # upload: the record is saved without a translation.
@@ -300,6 +311,9 @@ async def create_historical_record(
         extracted_text=extracted_text,
         translated_text=translated_text,
         description=None,
+        line_data=json.dumps(line_data),
+        image_width=image_width,
+        image_height=image_height,
     )
 
     try:
@@ -336,15 +350,7 @@ async def create_historical_record(
             detail="The uploaded image could not be saved.",
         ) from error
 
-    return {
-        "id": new_record.id,
-        "name": new_record.name,
-        "description": new_record.description,
-        "extracted_text": new_record.extracted_text,
-        "translated_text": new_record.translated_text,
-        "created_at": new_record.created_at.isoformat(),
-        "updated_at": new_record.updated_at.isoformat(),
-    }
+    return record_response(new_record)
 
 
 # RUN THE APPLICATION
@@ -372,15 +378,7 @@ def update_historical_record(
     db.commit()
     db.refresh(record)
 
-    return {
-        "id": record.id,
-        "name": record.name,
-        "description": record.description,
-        "extracted_text": record.extracted_text,
-        "translated_text": record.translated_text,
-        "created_at": record.created_at.isoformat(),
-        "updated_at": record.updated_at.isoformat(),
-    }
+    return record_response(record)
 
 
 @app.delete("/historical_records/{record_id}")

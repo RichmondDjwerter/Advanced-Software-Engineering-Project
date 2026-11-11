@@ -8,10 +8,20 @@ import { HistoricalRecord } from "@/app/types/historicalRecord";
 // Props for the OriginalView component
 type OriginalViewProps = {
   id: string;
+  activeLine: number | null;
+  onLineHover: (line: number | null) => void;
+  selectedLine: number | null;
+  onLineClick: (line: number) => void;
 };
 
 // Component to display the image of a historical record
-export function OriginalView({ id }: OriginalViewProps) {
+export function OriginalView({
+  id,
+  activeLine,
+  onLineHover,
+  selectedLine,
+  onLineClick,
+}: OriginalViewProps) {
   const [record, setRecord] = useState<HistoricalRecord | null>(null);
 
   useEffect(() => {
@@ -50,7 +60,18 @@ export function OriginalView({ id }: OriginalViewProps) {
 
       {record && (
         <div className="flex min-h-0 flex-1 flex-col justify-center">
-          <ImageWithZoom key={id} id={id} name={record.name} />
+          <ImageWithZoom
+            key={id}
+            id={id}
+            name={record.name}
+            lines={record.lines}
+            imageWidth={record.image_width}
+            imageHeight={record.image_height}
+            activeLine={activeLine}
+            onLineHover={onLineHover}
+            selectedLine={selectedLine}
+            onLineClick={onLineClick}
+          />
         </div>
       )}
     </Card>
