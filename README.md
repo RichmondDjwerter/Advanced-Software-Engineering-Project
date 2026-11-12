@@ -105,6 +105,26 @@ npm ci
 npm test
 ```
 
+## OCR model configuration and quality gate
+
+The OCR (`backend/ocr.py`) reads a page in two steps: it splits the page into lines, then reads each line with a TrOCR model. Both steps can be changed with environment variables, without touching the code:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `OCR_MODEL_ID` | `medieval-data/trocr-medieval-base` | Hugging Face model that reads each line |
+| `OCR_SEGMENTER` | `auto` | `kraken`, `profile` (built-in splitter) or `auto` (Kraken if installed, otherwise the built-in splitter) |
+| `OCR_KRAKEN_BIN` | `backend/.venv-kraken/bin/kraken` | Path to the Kraken executable |
+
+The production model was chosen by comparing several models on the same CATMuS test lines (see the MLflow notebook `notebooks/ultron_ocr_mlflow.ipynb`: it logs every experiment, compares them and records the production choice in a model registry). In a contest of 5 models on the same 100 lines (11 November 2026), TrOCR base reached 19.4 % character error rate (CER) at about 1 second per line. MEDUSA 0.2 (4B) did much better (8.9 % CER) but needs a 14 GB GPU and about 7 seconds per line, and it was trained on CATMuS, so we still have to confirm it never saw our test lines. TrOCR base therefore stays the default; MEDUSA is the main candidate.
+
+To check that a change does not make the transcription worse, run the quality gate from the `backend` directory. It reads 20 CATMuS test lines and fails if the CER is above the limit:
+
+```
+uv run python -m evaluation.ocr_quality --lines 20 --max-cer 0.30
+```
+
+The same check runs on GitHub (workflow "OCR quality gate") for every pull request that changes the OCR, and can be started by hand from the Actions tab to evaluate another model.
+
 
 ## Frontend UI with shadcn/ui
 
