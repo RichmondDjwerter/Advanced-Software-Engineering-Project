@@ -15,3 +15,6 @@
  All providers implement the same `ChatProvider` interface.
 
 
+ Reference: [Building with the Claude API](https://academy.claude.com/courses/building-with-the-claude-api).
+
+
