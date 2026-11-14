@@ -6,15 +6,40 @@ export async function GET(request: Request) {
   const url = id
     ? `${API_URL}/historical_records/${encodeURIComponent(id)}`
     : `${API_URL}/historical_records`;
-  const res = await fetch(url);
-  if (!res.ok) {
+
+  try {
+    const res = await fetch(url);
+    const body = await res.text();
+
+    if (!res.ok) {
+      console.error("Backend error:", res.status, body);
+
+      return NextResponse.json(
+        {
+          error: "Backend request failed",
+          details: body,
+        },
+        { status: res.status },
+      );
+    }
+
+    return new NextResponse(body, {
+      headers: {
+        "Content-Type":
+          res.headers.get("content-type") ?? "application/json",
+      },
+    });
+  } catch (error) {
+    console.error("Could not reach backend:", error);
+
     return NextResponse.json(
-      { error: "Failed to fetch historical records" },
-      { status: res.status },
+      {
+        error:
+          "Could not reach the backend. Check API_URL and confirm FastAPI is running.",
+      },
+      { status: 502 },
     );
   }
-
-  return NextResponse.json(await res.json());
 }
 
 export async function POST(request: Request) {
@@ -23,8 +48,10 @@ export async function POST(request: Request) {
     method: "POST",
     body: formData,
   });
+
   if (!res.ok) {
     const body = await res.json().catch(() => null);
+
     return NextResponse.json(
       { error: body?.detail ?? "Failed to add historical record" },
       { status: res.status },
@@ -69,6 +96,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   const id = new URL(request.url).searchParams.get("id");
+
   if (!id) {
     return NextResponse.json(
       { error: "Missing historical record ID" },
@@ -82,6 +110,7 @@ export async function DELETE(request: Request) {
       method: "DELETE",
     },
   );
+
   if (!res.ok) {
     return NextResponse.json(
       { error: "Failed to delete historical record" },
