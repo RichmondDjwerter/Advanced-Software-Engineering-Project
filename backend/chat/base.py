@@ -10,12 +10,12 @@ from typing import ClassVar, Literal
 
 
 @dataclass(frozen=True)
-class ChatTurn:
+class ProviderMessage:
     """One message of the conversation, independent of any provider or of the ORM.
 
-    Named ChatTurn (not ChatMessage) to avoid a clash with the SQLAlchemy model
+    Named ProviderMessage (not ChatMessage) to avoid a clash with the SQLAlchemy model
     ChatMessage in models.py. Map once at the boundary:
-    record.chat_messages -> list[ChatTurn].
+    record.chat_messages -> list[ProviderMessage].
     """
 
     role: Literal["user", "assistant"]
@@ -61,7 +61,7 @@ class ChatProvider(ABC):
         """
 
     @abstractmethod
-    def reply(self, history: list[ChatTurn], system_prompt: str) -> str:
+    def reply(self, history: list[ProviderMessage], system_prompt: str) -> str:
         """Return the assistant's answer to the conversation.
 
         Args:
