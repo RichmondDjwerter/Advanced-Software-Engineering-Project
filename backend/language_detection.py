@@ -6,7 +6,7 @@ from functools import cache
 from pathlib import Path
 from urllib.request import urlopen
 
-import fasttext
+import fasttext  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
