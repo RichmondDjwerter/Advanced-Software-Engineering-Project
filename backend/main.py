@@ -161,9 +161,7 @@ def record_response(record: HistoricalRecord):
     }
 
 
-def detect_transcription_language(
-    text: str, language: str | None = None
-) -> str | None:
+def detect_transcription_language(text: str, language: str | None = None) -> str | None:
     if language is None:
         try:
             language = detect_language(text)
