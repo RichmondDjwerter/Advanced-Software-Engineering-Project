@@ -75,9 +75,7 @@ export function TranscriptionView({
           typeof record.extracted_text === "string"
             ? record.extracted_text
             : "";
-        setText(
-          transcription,
-        );
+        setText(transcription);
         let language =
           typeof record.detected_language === "string"
             ? record.detected_language
