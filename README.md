@@ -58,7 +58,13 @@ Start the backend:
 uv run main.py
 ```
 
+Existing PostgreSQL databases are automatically upgraded with missing image metadata and detected-language columns when the backend starts.
+
 The `--frozen` flag ensures that dependencies are installed according to the committed `uv.lock` file without modifying it.
+
+On the first non-empty translation, the backend downloads the FastText language-identification model to `backend/.cache/lid.176.ftz` (override its path with `FASTTEXT_LANGUAGE_MODEL_PATH`). The model is provided by FastText under CC-BY-SA 3.0. Detected language codes are passed to the translator; add a `TranslatorConfig` entry for a language in `backend/translation.py` when a language-specific model is available. Unmapped or detections below 50% confidence use the existing multilingual translator.
+
+The detected language code is saved with each record and shown on its transcription panel. Older records with transcription text are automatically checked when opened.
 
 ### 4. Set up and start the frontend
 

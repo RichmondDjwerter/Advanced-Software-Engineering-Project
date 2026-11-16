@@ -20,6 +20,7 @@ dependencies = [
     "torchvision>=0.29.1",
     "pillow>=12.3.0",
     "sentencepiece>=0.2.0",
+    "fasttext-predict-v2>=1.1.0",
 ]
 
 [dependency-groups]

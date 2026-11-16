@@ -34,7 +34,10 @@ export async function updateHistoricalRecord(
  * Translates the given text into English and stores the result as the
  * translated text of the record. Throws if the translation fails.
  */
-export async function translateHistoricalRecord(id: string, text: string) {
+export async function translateHistoricalRecord(
+  id: string,
+  text: string,
+): Promise<string | null> {
   const response = await fetch(
     `${API_URL}/historical_records/${encodeURIComponent(id)}/translate`,
     {
@@ -47,4 +50,23 @@ export async function translateHistoricalRecord(id: string, text: string) {
   if (!response.ok) {
     throw new Error("Failed to translate historical record.");
   }
+
+  const result: { detected_language: string | null } = await response.json();
+  return result.detected_language;
+}
+
+export async function detectHistoricalRecordLanguage(
+  id: string,
+): Promise<string | null> {
+  const response = await fetch(
+    `${API_URL}/historical_records/${encodeURIComponent(id)}/detect-language`,
+    { method: "POST" },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to detect the document language.");
+  }
+
+  const result: { detected_language: string | null } = await response.json();
+  return result.detected_language;
 }
