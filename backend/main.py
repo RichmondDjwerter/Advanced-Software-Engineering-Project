@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
-from chat_mock import get_mock_reply
+from chat.gemini_provider import GeminiProvider
 from database import Base, engine, get_db
 from models import HistoricalRecord
 from ocr import OCRResult, transcribe_image
@@ -427,10 +427,14 @@ def post_message(
         raise HTTPException(status_code=400, detail="Message is empty")
 
     user_message = ChatMessage(role="user", content=content)
-    # Mocked answer until the LLM is connected
-    assistant_message = ChatMessage(role="assistant", content=get_mock_reply(content))
+    record.chat_messages.append(user_message)
 
-    record.chat_messages.extend([user_message, assistant_message])
+    assistant_response = GeminiProvider().reply(record.chat_messages, record.extracted_text or "")
+
+    assistant_message = ChatMessage(role="assistant", content=assistant_response)
+
+    record.chat_messages.append(assistant_message)
+
     db.commit()
     db.refresh(user_message)
     db.refresh(assistant_message)
