@@ -429,7 +429,13 @@ def post_message(
     user_message = ChatMessage(role="user", content=content)
     record.chat_messages.append(user_message)
 
-    assistant_response = GeminiProvider().reply(record.chat_messages, record.extracted_text or "")
+    chat_provider = (
+        GeminiProvider()
+    )  # Use the GeminiProvider for generating responses for now
+
+    assistant_response = chat_provider.reply(
+        record.chat_messages, record.extracted_text or ""
+    )
 
     assistant_message = ChatMessage(role="assistant", content=assistant_response)
 
