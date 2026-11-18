@@ -20,6 +20,7 @@ from sqlalchemy import Engine, inspect, text
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
+from chat.gemini_provider import GeminiProvider
 from database import Base, engine, get_db
 from language_detection import detect_language
 from llm_chat import generate_grounded_reply
@@ -519,9 +520,20 @@ def post_message(
         raise HTTPException(status_code=503, detail=str(error)) from error
 
     user_message = ChatMessage(role="user", content=content)
-    assistant_message = ChatMessage(role="assistant", content=assistant_reply)
+    record.chat_messages.append(user_message)
 
-    record.chat_messages.extend([user_message, assistant_message])
+    chat_provider = (
+        GeminiProvider()
+    )  # Use the GeminiProvider for generating responses for now
+
+    assistant_response = chat_provider.reply(
+        record.chat_messages, record.extracted_text or ""
+    )
+
+    assistant_message = ChatMessage(role="assistant", content=assistant_response)
+
+    record.chat_messages.append(assistant_message)
+
     db.commit()
     db.refresh(user_message)
     db.refresh(assistant_message)

@@ -38,6 +38,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { ChatMessage, ChatRole } from "@/app/types/chat";
+import Markdown from "react-markdown";
 
 /** One message with its avatar, vertically centered. User messages are mirrored to the right. */
 const suggestions = [
@@ -191,6 +192,7 @@ export function ChatClient({
               type="button"
               variant="outline"
               className="rounded-full"
+              onClick={() => setInput(label)}
             >
               <Icon data-icon="inline-start" />
               {label}
@@ -204,7 +206,9 @@ export function ChatClient({
                 <MessageScrollerContent className="p-(--card-spacing)">
                   {messages.map((message) => (
                     <MessageScrollerItem key={message.id}>
-                      <ChatRow role={message.role}>{message.content}</ChatRow>
+                      <ChatRow role={message.role}>
+                        <Markdown>{message.content}</Markdown>
+                      </ChatRow>
                     </MessageScrollerItem>
                   ))}
                   {pending && (
