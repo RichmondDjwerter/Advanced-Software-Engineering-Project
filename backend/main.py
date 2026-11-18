@@ -16,11 +16,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import Engine, inspect, text
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from chat.gemini_provider import GeminiProvider
 from database import Base, engine, get_db
+from language_detection import detect_language
+from llm_chat import generate_grounded_reply
 from models import HistoricalRecord
 from ocr import OCRResult, transcribe_image
 from translation import translate_text
@@ -28,6 +31,32 @@ from translation import translate_text
 Base.metadata.create_all(bind=engine)
 
 from models import ChatMessage
+
+
+def migrate_historical_record_columns(database_engine: Engine = engine) -> None:
+    columns = {
+        column["name"]
+        for column in inspect(database_engine).get_columns("historical_records")
+    }
+    missing_columns = {
+        "line_data": "TEXT",
+        "image_width": "INTEGER",
+        "image_height": "INTEGER",
+        "detected_language": "VARCHAR(16)",
+    }
+
+    with database_engine.begin() as connection:
+        for name, column_type in missing_columns.items():
+            if name not in columns:
+                connection.execute(
+                    text(
+                        f"ALTER TABLE historical_records "
+                        f"ADD COLUMN {name} {column_type}"
+                    )
+                )
+
+
+migrate_historical_record_columns()
 
 app = FastAPI(
     title="Historical Manuscripts API",
@@ -127,9 +156,25 @@ def record_response(record: HistoricalRecord):
         "lines": lines,
         "image_width": record.image_width,
         "image_height": record.image_height,
+        "detected_language": record.detected_language,
         "created_at": record.created_at.isoformat(),
         "updated_at": record.updated_at.isoformat(),
     }
+
+
+def detect_transcription_language(text: str, language: str | None = None) -> str | None:
+    if language is None:
+        try:
+            language = detect_language(text)
+        except Exception:
+            logger.exception(
+                "FastText language detection failed; using the default translator."
+            )
+
+    if language is not None:
+        logger.info("Detected transcription language '%s'.", language)
+
+    return language
 
 
 @app.get("/historical_records")
@@ -155,6 +200,25 @@ def get_historical_record(
         )
 
     return record_response(record)
+
+
+@app.post("/historical_records/{record_id}/detect-language")
+async def detect_historical_record_language(
+    record_id: str,
+    db: Session = Depends(get_db),
+):
+    record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
+
+    if record is None:
+        raise HTTPException(status_code=404, detail="Historical record not found")
+
+    record.detected_language = await run_in_threadpool(
+        detect_transcription_language,
+        record.extracted_text or "",
+    )
+    db.commit()
+
+    return {"id": record.id, "detected_language": record.detected_language}
 
 
 # TRANSLATE THE EXTRACTED TEXT OF A RECORD INTO ENGLISH
@@ -184,10 +248,15 @@ async def translate_historical_record(
     )
 
     try:
+        detected_language = await run_in_threadpool(
+            detect_transcription_language,
+            source_text,
+            language,
+        )
         translated = await run_in_threadpool(
             translate_text,
             source_text,
-            language,
+            detected_language,
         )
     except Exception as error:
         logger.exception("Translation failed.")
@@ -197,9 +266,14 @@ async def translate_historical_record(
         ) from error
 
     record.translated_text = translated
+    record.detected_language = detected_language
     db.commit()
 
-    return {"id": record.id, "translated_text": record.translated_text}
+    return {
+        "id": record.id,
+        "translated_text": record.translated_text,
+        "detected_language": record.detected_language,
+    }
 
 
 # UPLOAD A HISTORICAL DOCUMENT, RUN OCR AND TRANSLATE IT
@@ -293,13 +367,18 @@ async def create_historical_record(
     # upload: the record is saved without a translation.
 
     translated_text = None
+    detected_language = None
 
     if extracted_text.strip():
+        detected_language = await run_in_threadpool(
+            detect_transcription_language,
+            extracted_text,
+        )
         try:
             translated_text = await run_in_threadpool(
                 translate_text,
                 extracted_text,
-                None,
+                detected_language,
             )
         except Exception:
             logger.exception("Translation failed. Saving without translation.")
@@ -314,6 +393,7 @@ async def create_historical_record(
         line_data=json.dumps(line_data),
         image_width=image_width,
         image_height=image_height,
+        detected_language=detected_language,
     )
 
     try:
@@ -425,6 +505,19 @@ def post_message(
     content = chat_message.content.strip()
     if not content:
         raise HTTPException(status_code=400, detail="Message is empty")
+
+    history = list(record.chat_messages)
+    image_path = next(UPLOAD_DIR.glob(f"{record.id}.*"), None)
+
+    try:
+        assistant_reply = generate_grounded_reply(
+            record=record,
+            question=content,
+            history=history,
+            image_path=image_path,
+        )
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
 
     user_message = ChatMessage(role="user", content=content)
     record.chat_messages.append(user_message)

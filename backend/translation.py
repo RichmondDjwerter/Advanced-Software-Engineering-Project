@@ -15,17 +15,14 @@ class TranslatorConfig:
     num_beams: int = 4
 
 
-# To swap a model, change its entry. To add a language specific model, add an
-# entry keyed by language code (e.g. "la" for Latin) and it is used
-# automatically; unknown languages fall back to DEFAULT_LANGUAGE.
+# Add language-specific models under the FastText language code. Unmapped or
+# uncertain languages use the multilingual default translator.
 DEFAULT_LANGUAGE = "default"
 TRANSLATORS: dict[str, TranslatorConfig] = {
     DEFAULT_LANGUAGE: TranslatorConfig(
         os.getenv("TRANSLATION_MODEL_ID", "Helsinki-NLP/opus-mt-mul-en")
     ),
-    # example for latin:
-    # "la": TranslatorConfig("model")
-    # Default translator "Helsinki-NLP/opus-mt-mul-en"
+    # "la": TranslatorConfig("your-latin-to-english-model"),
 }
 
 # OCR output is cut into chunks of about this many words so long pages are

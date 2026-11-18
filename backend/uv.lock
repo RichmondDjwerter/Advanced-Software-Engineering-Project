@@ -333,6 +333,7 @@ dependencies = [
     { name = "datasets" },
     { name = "fastapi", extra = ["standard"] },
     { name = "google-genai" },
+    { name = "fasttext-predict-v2" },
     { name = "jiwer" },
     { name = "pillow" },
     { name = "psycopg", extra = ["binary"] },
@@ -360,6 +361,7 @@ requires-dist = [
     { name = "datasets", specifier = ">=5.1.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.141.1" },
     { name = "google-genai", specifier = ">=3.4.0" },
+    { name = "fasttext-predict-v2", specifier = ">=1.1.0" },
     { name = "jiwer", specifier = ">=4.0.0" },
     { name = "pillow", specifier = ">=12.3.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.6" },
@@ -990,6 +992,23 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/33/a4/9473c7c3b87009d9c1d74034e4a0f6a35ff0d42dd0f9866d0c3ec4e9217b/fastjsonschema-2.22.2.tar.gz", hash = "sha256:72064e12356a7d6ef02165be2946b9abadbdf238536e07eb587e3dbaa33099cf", size = 385171, upload-time = "2026-08-15T19:47:08.853Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/49/82/2755c7c982086f00d4dab85bc120ec35045a9fc2191893a6ce79afe94443/fastjsonschema-2.22.2-py3-none-any.whl", hash = "sha256:0fb3915616adac85ccfdd737d26be1089845d2019819505b42d39888458f74d4", size = 27413, upload-time = "2026-08-15T19:47:04.406Z" },
+]
+
+[[package]]
+name = "fasttext-predict-v2"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c0/77/592b21091133d3f63229eff33bc2ce853b87557590b42533c783ddfc6ea3/fasttext_predict_v2-1.1.0.tar.gz", hash = "sha256:d4b8abb6e0cf8250821b5af4e1c6ba74482fc221ce88388f95b0dd17ddb75985", size = 16526, upload-time = "2026-08-19T07:28:21.511Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1a/ac/d640017a2446e62824bb230f267f431b944487357691638beecfe00c89ac/fasttext_predict_v2-1.1.0-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:d7d3d86465d9d2f0c35e8e76ee469953c47a3ad90428e0b29ffe71e90eacf0e5", size = 125086, upload-time = "2026-08-19T07:28:11.643Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/70/fd1d8fa38a5d31163d08283f1836573da3eec4cc923d1b25e2b9109b565f/fasttext_predict_v2-1.1.0-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:b05d27a261034aaa6f8b9dfc5c81b61763fa50c95030ea1008011fae1a8ae32f", size = 115924, upload-time = "2026-08-19T07:28:12.672Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/99/f57a9e6b5119528df22f90b55e9310449403081bacbbeb3726ef9577d2f4/fasttext_predict_v2-1.1.0-cp314-cp314-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:9de01e6ca796f9a94bf10394871cca253a86a49aca55f1df696d7365f3c03d9e", size = 333329, upload-time = "2026-08-19T07:28:13.545Z" },
+    { url = "https://files.pythonhosted.org/packages/47/28/5c23cbd0c23e8d5e1701294a03e734bc7649a51385ec5415970567fb2790/fasttext_predict_v2-1.1.0-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:212ad9f38ba202a404237b6c5cf34eaa8522d66b292fe1251bbb5f81cdb2b09c", size = 359419, upload-time = "2026-08-19T07:28:14.616Z" },
+    { url = "https://files.pythonhosted.org/packages/8c/68/2594df4d5061654810f2cca8dfb4dfb4b2ee2c7e0bd369cd94fb813c94be/fasttext_predict_v2-1.1.0-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:a7607b4d374be491b7a3d17b0db0122f0ecf9678430b9c0e6972c9a96e40a47c", size = 1314058, upload-time = "2026-08-19T07:28:15.713Z" },
+    { url = "https://files.pythonhosted.org/packages/f7/dc/f08cec82ce43f2e8d862448060bad1e0f17bce39a16d2c945bbe53730a8d/fasttext_predict_v2-1.1.0-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:1866368740c5d2e624bf0113f6d5325fea8b17f50cf247aec1444b86602906c4", size = 1395362, upload-time = "2026-08-19T07:28:17.028Z" },
+    { url = "https://files.pythonhosted.org/packages/bf/46/f4cca91b2167f33ef657c64d0920cc0fd13b53d4be2be50f0e10985f22de/fasttext_predict_v2-1.1.0-cp314-cp314-win32.whl", hash = "sha256:569cdc710b7fa0ac7135fec6fe23d5f2c3c3a7909aeef80717c3c9d208c1aea5", size = 305851, upload-time = "2026-08-19T07:28:18.216Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/67/4c20a9f69b23a43d62d42a6dfc826a5e59b4083ad37f481bf7cf4bc76d20/fasttext_predict_v2-1.1.0-cp314-cp314-win_amd64.whl", hash = "sha256:9c269045309c4e1f93b7ba249ff6d811af8162b4a3563e7e0d18c20e0257bb9d", size = 327356, upload-time = "2026-08-19T07:28:19.254Z" },
+    { url = "https://files.pythonhosted.org/packages/20/34/94167cba9d280d3727f6a180f2a53b127075ed558e363f09a078277170db/fasttext_predict_v2-1.1.0-cp314-cp314-win_arm64.whl", hash = "sha256:46385eda96b436fa570d7c15d5f13591fb35c65ec0ccf30d79f4155dc71e9219", size = 491265, upload-time = "2026-08-19T07:28:20.388Z" },
 ]
 
 [[package]]

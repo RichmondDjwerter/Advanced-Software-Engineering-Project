@@ -15,6 +15,7 @@ export interface HistoricalRecord {
   lines?: OCRLine[];
   image_width?: number | null;
   image_height?: number | null;
+  detected_language?: string | null;
   created_at: string;
   updated_at: string;
 }

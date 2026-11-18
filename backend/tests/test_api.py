@@ -4,9 +4,35 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
+from sqlalchemy import create_engine, inspect, text
 
 import chat_mock
 import main
+
+
+def test_migrate_historical_record_columns_adds_missing_columns() -> None:
+    legacy_engine = create_engine("sqlite://")
+    with legacy_engine.begin() as connection:
+        connection.execute(
+            text(
+                "CREATE TABLE historical_records "
+                "(id VARCHAR(36) PRIMARY KEY, name VARCHAR(255) NOT NULL)"
+            )
+        )
+
+    main.migrate_historical_record_columns(legacy_engine)
+    main.migrate_historical_record_columns(legacy_engine)
+
+    columns = {
+        column["name"]
+        for column in inspect(legacy_engine).get_columns("historical_records")
+    }
+    assert {
+        "line_data",
+        "image_width",
+        "image_height",
+        "detected_language",
+    } <= columns
 
 
 def test_root_returns_api_description(client: TestClient) -> None:
@@ -53,6 +79,11 @@ def fake_translation(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+@pytest.fixture(autouse=True)
+def fake_language_detection(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(main, "detect_language", lambda text: None)
+
+
 def test_upload_translates_extracted_text(client: TestClient) -> None:
     response = client.post(
         "/historical_records",
@@ -61,6 +92,39 @@ def test_upload_translates_extracted_text(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert response.json()["translated_text"] == "translated: fake text"
+    assert response.json()["detected_language"] is None
+
+
+def test_upload_uses_detected_language_for_translation(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    languages: list[str | None] = []
+    monkeypatch.setattr(main, "detect_language", lambda text: "la")
+    monkeypatch.setattr(
+        main,
+        "translate_text",
+        lambda text, language=None: languages.append(language) or "translated",
+    )
+
+    response = client.post(
+        "/historical_records",
+        files={"image": ("record.png", PNG_BYTES, "image/png")},
+    )
+
+    assert response.status_code == 200
+    assert languages == ["la"]
+    assert response.json()["detected_language"] == "la"
+
+
+def test_language_detection_falls_back_if_fasttext_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def broken_detection(text: str) -> str | None:
+        raise RuntimeError("FastText model unavailable")
+
+    monkeypatch.setattr(main, "detect_language", broken_detection)
+
+    assert main.detect_transcription_language("some transcription") is None
 
 
 def test_upload_succeeds_when_translation_fails(
@@ -79,6 +143,26 @@ def test_upload_succeeds_when_translation_fails(
     assert response.status_code == 200
     assert response.json()["extracted_text"] == "fake text"
     assert response.json()["translated_text"] is None
+    assert response.json()["detected_language"] is None
+
+
+def test_upload_keeps_detected_language_when_translation_fails(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(main, "detect_language", lambda text: "la")
+
+    def broken_translation(text: str, language: str | None = None) -> str:
+        raise RuntimeError("model missing")
+
+    monkeypatch.setattr(main, "translate_text", broken_translation)
+
+    response = client.post(
+        "/historical_records",
+        files={"image": ("record.png", PNG_BYTES, "image/png")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["detected_language"] == "la"
 
 
 def test_upload_image_creates_historical_record(
@@ -195,6 +279,43 @@ def upload_record(client: TestClient) -> str:
         files={"image": ("record.png", PNG_BYTES, "image/png")},
     )
     return response.json()["id"]
+
+
+def test_retranslation_saves_detected_language(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    record_id = upload_record(client)
+    monkeypatch.setattr(main, "detect_language", lambda text: "la")
+
+    response = client.post(
+        f"/historical_records/{record_id}/translate",
+        json={"text": "Gallia est omnis divisa"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["detected_language"] == "la"
+    assert (
+        client.get(f"/historical_records/{record_id}").json()["detected_language"]
+        == "la"
+    )
+
+
+def test_detect_language_endpoint_updates_existing_record(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    record_id = upload_record(client)
+    monkeypatch.setattr(main, "detect_language", lambda text: "la")
+
+    response = client.post(
+        f"/historical_records/{record_id}/detect-language",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["detected_language"] == "la"
+    assert (
+        client.get(f"/historical_records/{record_id}").json()["detected_language"]
+        == "la"
+    )
 
 
 def test_update_record_saves_texts_without_touching_other_fields(

@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { CardContent } from "@/components/ui/card";
 import {
   API_URL,
+  detectHistoricalRecordLanguage,
   translateHistoricalRecord,
   updateHistoricalRecord,
 } from "@/app/lib/api";
 import { EditMode } from "@/app/components/EditMode";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
+import type { HistoricalRecord } from "@/app/types/historicalRecord";
 
 type Props = {
   recordId: string;
@@ -27,6 +29,7 @@ export function TranscriptionView({
   onLineClick,
 }: Props) {
   const [text, setText] = useState("");
+  const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const lineElements = useRef<(HTMLSpanElement | null)[]>([]);
@@ -67,12 +70,26 @@ export function TranscriptionView({
           throw new Error("Could not load the transcription.");
         }
 
-        const record = await response.json();
-        setText(
+        const record: HistoricalRecord = await response.json();
+        const transcription =
           typeof record.extracted_text === "string"
             ? record.extracted_text
-            : "",
-        );
+            : "";
+        setText(transcription);
+        let language =
+          typeof record.detected_language === "string"
+            ? record.detected_language
+            : null;
+
+        if (!language && transcription.trim()) {
+          try {
+            language = await detectHistoricalRecordLanguage(recordId);
+          } catch (error) {
+            console.error(error);
+          }
+        }
+
+        setDetectedLanguage(language);
         setError(false);
       } catch (err) {
         if (!controller.signal.aborted) {
@@ -122,7 +139,9 @@ export function TranscriptionView({
 
           // The translation follows the transcription.
           try {
-            await translateHistoricalRecord(recordId, edited);
+            setDetectedLanguage(
+              await translateHistoricalRecord(recordId, edited),
+            );
           } catch (err) {
             console.error(err);
             toast.add({
@@ -133,6 +152,16 @@ export function TranscriptionView({
             });
           }
         }}
+        actions={
+          <span
+            className="ml-auto rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground"
+            aria-live="polite"
+          >
+            {detectedLanguage
+              ? `Detected: ${detectedLanguage}`
+              : "Language not detected"}
+          </span>
+        }
         renderText={() =>
           text.split(/\r?\n/).map((line, index) => (
             <span
