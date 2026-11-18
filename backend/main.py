@@ -19,8 +19,8 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
-from chat_mock import get_mock_reply
 from database import Base, engine, get_db
+from llm_chat import generate_grounded_reply
 from models import HistoricalRecord
 from ocr import OCRResult, transcribe_image
 from translation import translate_text
@@ -426,9 +426,21 @@ def post_message(
     if not content:
         raise HTTPException(status_code=400, detail="Message is empty")
 
+    history = list(record.chat_messages)
+    image_path = next(UPLOAD_DIR.glob(f"{record.id}.*"), None)
+
+    try:
+        assistant_reply = generate_grounded_reply(
+            record=record,
+            question=content,
+            history=history,
+            image_path=image_path,
+        )
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+
     user_message = ChatMessage(role="user", content=content)
-    # Mocked answer until the LLM is connected
-    assistant_message = ChatMessage(role="assistant", content=get_mock_reply(content))
+    assistant_message = ChatMessage(role="assistant", content=assistant_reply)
 
     record.chat_messages.extend([user_message, assistant_message])
     db.commit()
