@@ -52,7 +52,9 @@ def _source_prompt(record: HistoricalRecord) -> str:
     translation = (record.translated_text or "").strip()
 
     if len(transcription) > MAX_SOURCE_CHARACTERS:
-        transcription = transcription[:MAX_SOURCE_CHARACTERS] + "\n[Transcription shortened.]"
+        transcription = (
+            transcription[:MAX_SOURCE_CHARACTERS] + "\n[Transcription shortened.]"
+        )
     if len(translation) > MAX_SOURCE_CHARACTERS:
         translation = translation[:MAX_SOURCE_CHARACTERS] + "\n[Translation shortened.]"
 
@@ -82,9 +84,7 @@ def generate_grounded_reply(
     endpoint, model_name = _local_chat_url()
     system_content = SYSTEM_PROMPT + "\n\nSUPPLIED SOURCES:\n" + _source_prompt(record)
 
-    messages: list[dict[str, object]] = [
-        {"role": "system", "content": system_content}
-    ]
+    messages: list[dict[str, object]] = [{"role": "system", "content": system_content}]
     for message in history[-MAX_HISTORY_MESSAGES:]:
         if message.role in {"user", "assistant"}:
             messages.append({"role": message.role, "content": message.content})
@@ -125,7 +125,9 @@ def generate_grounded_reply(
     )
 
     try:
-        with urlopen(request, timeout=float(os.getenv("ULTRON_LLM_TIMEOUT_SECONDS", "180"))) as response:
+        with urlopen(
+            request, timeout=float(os.getenv("ULTRON_LLM_TIMEOUT_SECONDS", "180"))
+        ) as response:
             result = json.loads(response.read().decode("utf-8"))
     except HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")[:1000]
