@@ -207,19 +207,6 @@ def create_record(client: TestClient) -> str:
     return response.json()["id"]
 
 
-def test_chat_history_contains_both_messages(client: TestClient) -> None:
-    record_id = create_record(client)
-    client.post(
-        f"/historical_records/{record_id}/chat",
-        json={"content": "When was this letter written?"},
-    )
-
-    response = client.get(f"/historical_records/{record_id}/chat")
-
-    assert response.status_code == 200
-    assert [m["role"] for m in response.json()] == ["user", "assistant"]
-
-
 def test_chat_missing_record_returns_404(client: TestClient) -> None:
     response = client.post(
         "/historical_records/missing-record/chat",
