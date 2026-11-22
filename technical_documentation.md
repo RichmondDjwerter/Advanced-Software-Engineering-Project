@@ -39,3 +39,16 @@
  - **Security:** same rule as for every cloud provider: the key lives only in the backend and is never sent to or stored in the browser. Requests always go browser → our backend → Gemini.
 
  To verify during implementation: exact structure of the model's answer steps in stateless mode, exact placement of `system_instruction`, and the free-tier limits.
+
+ ## Network access
+ The application has no login and the local database accepts connections without a password. All three services therefore only listen on `127.0.0.1`:
+
+ | Service | Port | Configured in |
+ |---|---|---|
+ | Frontend (Next.js) | 3000 | `ultron-app/package.json` (`-H 127.0.0.1` for `dev` and `start`) |
+ | Backend (FastAPI) | 8000 | `backend/main.py` (`host`) |
+ | Database (PostgreSQL) | 5433 | `backend/docker-compose.yaml` (`ports`) |
+
+ The frontend has to be restricted as well, because its `/api` routes forward requests to the backend. Do not open these ports to a network before authentication and a database password are in place.
+
+ Run `docker compose up -d` in `backend` to apply a changed port binding to an existing container. Do not use `docker compose down` for this: there is no named volume, so the new container would start with an empty database.

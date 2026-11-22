@@ -544,6 +544,6 @@ def post_message(
 if __name__ == "__main__":
     uvicorn.run(
         app,
-        host="0.0.0.0",
+        host="127.0.0.1",  # local only: the API has no login and can use the Gemini key
         port=8000,
     )
