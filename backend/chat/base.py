@@ -6,9 +6,8 @@ endpoint can be swapped without changing the API layer.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pathlib import Path
 from typing import ClassVar, Literal
-
-from fastapi import Path
 
 from models import HistoricalRecord
 

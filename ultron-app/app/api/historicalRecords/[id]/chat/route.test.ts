@@ -47,21 +47,27 @@ describe("chat route", () => {
     fetchMock.mockResolvedValue(Response.json(messages));
 
     const response = await POST(
-      postRequest({ message: "  Who wrote this letter?  " }),
+      postRequest({ message: "  Who wrote this letter?  ", provider: "local" }),
       ctx,
     );
 
     expect(fetchMock).toHaveBeenCalledWith(chatUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: "Who wrote this letter?" }),
+      body: JSON.stringify({
+        content: "Who wrote this letter?",
+        provider: "local",
+      }),
     });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual(messages);
   });
 
   it("POST rejects an empty message without calling the backend", async () => {
-    const response = await POST(postRequest({ message: "   " }), ctx);
+    const response = await POST(
+      postRequest({ message: "   ", provider: "local" }),
+      ctx,
+    );
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: "Message is empty." });
@@ -71,7 +77,10 @@ describe("chat route", () => {
   it("POST returns an error when the backend fails", async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 500 }));
 
-    const response = await POST(postRequest({ message: "Hello" }), ctx);
+    const response = await POST(
+      postRequest({ message: "Hello", provider: "local" }),
+      ctx,
+    );
 
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({

@@ -21,6 +21,7 @@ from sqlalchemy import Engine, inspect, text
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
+from chat.base import ChatProvider
 from chat.gemini_provider import GeminiProvider
 from chat.local_provider import LocalLLMProvider
 from database import Base, engine, get_db
@@ -514,6 +515,8 @@ def post_message(
 
     user_message = ChatMessage(role="user", content=content)
     record.chat_messages.append(user_message)
+
+    chat_provider: ChatProvider
 
     if chat_message.provider == "local":
         chat_provider = LocalLLMProvider()
