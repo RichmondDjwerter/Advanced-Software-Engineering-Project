@@ -8,6 +8,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import ClassVar, Literal
 
+from fastapi import Path
+
+from models import HistoricalRecord
+
 
 @dataclass(frozen=True)
 class ProviderMessage:
@@ -61,7 +65,12 @@ class ChatProvider(ABC):
         """
 
     @abstractmethod
-    def reply(self, history: list[ProviderMessage], system_prompt: str) -> str:
+    def reply(
+        self,
+        history: list[ProviderMessage],
+        system_prompt: HistoricalRecord,
+        image_path: Path | None = None,
+    ) -> str:
         """Return the assistant's answer to the conversation.
 
         Args:

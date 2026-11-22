@@ -13,7 +13,7 @@ from .base import ChatProvider, ChatProviderError
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = "gemini-4-hydrogen"
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-4-hydrogen")
 
 client = genai.Client(api_key=GEMINI_API_KEY) if bool(GEMINI_API_KEY) else None
 
@@ -30,13 +30,15 @@ class GeminiProvider(ChatProvider):
     def is_configured(cls) -> bool:
         return client is not None
 
-    def reply(self, history, system_prompt):
+    def reply(self, history, system_prompt, image_path=None):
         if not self.is_configured():
             raise ChatProviderError(
                 "Gemini is not configured. Please set the GEMINI_API_KEY environment variable."
             )
 
         try:
+            system_instruction = system_prompt.extracted_text or ""
+
             # Convert the history of ProviderMessage objects into the format expected by the Gemini API
             gemini_history = [
                 {
@@ -50,7 +52,7 @@ class GeminiProvider(ChatProvider):
                 model=GEMINI_MODEL,
                 store=False,
                 input=gemini_history,
-                system_instruction=system_prompt,
+                system_instruction=system_instruction,
             )
             return interaction.output_text
 

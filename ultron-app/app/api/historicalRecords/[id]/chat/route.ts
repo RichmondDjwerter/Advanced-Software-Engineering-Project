@@ -30,15 +30,23 @@ export async function GET(_request: Request, ctx: Ctx) {
 export async function POST(request: Request, ctx: Ctx) {
   const { id } = await ctx.params;
   // body of the post
-  const { message } = await request.json();
-  if (typeof message !== "string" || !message.trim()) {
+  const { message, provider } = await request.json();
+  if (
+    typeof message !== "string" ||
+    !message.trim() ||
+    typeof provider !== "string" ||
+    !provider.trim()
+  ) {
     return NextResponse.json({ error: "Message is empty." }, { status: 400 });
   }
 
   const res = await fetch(chatUrl(id), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content: message.trim() }),
+    body: JSON.stringify({
+      content: message.trim(),
+      provider: provider,
+    }),
   });
 
   if (!res.ok) {
