@@ -38,6 +38,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { ChatMessage, ChatRole } from "@/app/types/chat";
+import Markdown from "react-markdown";
 
 /** One message with its avatar, vertically centered. User messages are mirrored to the right. */
 const suggestions = [
@@ -119,6 +120,7 @@ export function ChatClient({
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [provider, setProvider] = useState<"local" | "gemini">("local");
   const message = input.trim();
   const hasMessages = messages.length > 0;
   const canSend = message !== "" && !pending;
@@ -144,7 +146,7 @@ export function ChatClient({
       const res = await fetch(`/api/historicalRecords/${recordId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, provider }),
       });
       if (!res.ok) {
         const { error } = await res.json();
@@ -176,14 +178,35 @@ export function ChatClient({
   return (
     <MessageScrollerProvider autoScroll>
       <Card className="gap-0">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessagesSquareIcon className="size-5 text-coral" />
-            Chat
-          </CardTitle>
-          <CardDescription>Ask a question about this document.</CardDescription>
+        <CardHeader className="relative flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <MessagesSquareIcon className="size-5 text-coral" />
+              Chat
+            </CardTitle>
+            <CardDescription>
+              Ask a question about this document.
+            </CardDescription>
+          </div>
+          <div className="absolute right-(--card-spacing) top-(--card-spacing)">
+            <label htmlFor="llm-provider" className="sr-only">
+              LLM provider
+            </label>
+            <select
+              id="llm-provider"
+              name="llm-provider"
+              value={provider}
+              onChange={(event) =>
+                setProvider(event.target.value as "local" | "gemini")
+              }
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              aria-label="Select LLM provider"
+            >
+              <option value="local">Local LLM</option>
+              <option value="gemini">Gemini</option>
+            </select>
+          </div>
         </CardHeader>
-        {/* Suggestions are placeholders for now and do not do anything yet. */}
         <div className="flex flex-wrap gap-2 px-(--card-spacing) pt-(--card-spacing)">
           {suggestions.map(({ icon: Icon, label }) => (
             <Button
@@ -191,6 +214,7 @@ export function ChatClient({
               type="button"
               variant="outline"
               className="rounded-full"
+              onClick={() => setInput(label)}
             >
               <Icon data-icon="inline-start" />
               {label}
@@ -204,7 +228,9 @@ export function ChatClient({
                 <MessageScrollerContent className="p-(--card-spacing)">
                   {messages.map((message) => (
                     <MessageScrollerItem key={message.id}>
-                      <ChatRow role={message.role}>{message.content}</ChatRow>
+                      <ChatRow role={message.role}>
+                        <Markdown>{message.content}</Markdown>
+                      </ChatRow>
                     </MessageScrollerItem>
                   ))}
                   {pending && (

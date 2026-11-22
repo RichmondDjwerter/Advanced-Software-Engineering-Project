@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
+from typing import Literal
 
 import uvicorn
 from fastapi import (
@@ -20,9 +21,11 @@ from sqlalchemy import Engine, inspect, text
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
+from chat.base import ChatProvider
+from chat.gemini_provider import GeminiProvider
+from chat.local_provider import LocalLLMProvider
 from database import Base, engine, get_db
 from language_detection import detect_language
-from llm_chat import generate_grounded_reply
 from models import HistoricalRecord
 from ocr import OCRResult, transcribe_image
 from translation import translate_text
@@ -124,6 +127,7 @@ class ChatMessageOut(BaseModel):
 
 class ChatMessageCreate(BaseModel):
     content: str
+    provider: Literal["local", "gemini"] = "local"
 
 
 # ROOT ENDPOINT
@@ -494,7 +498,9 @@ def get_chat_history(record_id: str, db: Session = Depends(get_db)):
     status_code=201,
 )
 def post_message(
-    record_id: str, chat_message: ChatMessageCreate, db: Session = Depends(get_db)
+    record_id: str,
+    chat_message: ChatMessageCreate,
+    db: Session = Depends(get_db),
 ):
     """Saves the user message and the assistant response, returns both"""
     record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
@@ -505,23 +511,29 @@ def post_message(
     if not content:
         raise HTTPException(status_code=400, detail="Message is empty")
 
-    history = list(record.chat_messages)
-    image_path = next(UPLOAD_DIR.glob(f"{record.id}.*"), None)
+    # image_path = next(UPLOAD_DIR.glob(f"{record.id}.*"), None)
+
+    user_message = ChatMessage(role="user", content=content)
+    record.chat_messages.append(user_message)
+
+    chat_provider: ChatProvider
+
+    if chat_message.provider == "local":
+        chat_provider = LocalLLMProvider()
+    else:
+        chat_provider = GeminiProvider()
 
     try:
-        assistant_reply = generate_grounded_reply(
-            record=record,
-            question=content,
-            history=history,
-            image_path=image_path,
+        assistant_reply = chat_provider.reply(
+            record.chat_messages, record, image_path=None
         )
     except RuntimeError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
 
-    user_message = ChatMessage(role="user", content=content)
     assistant_message = ChatMessage(role="assistant", content=assistant_reply)
 
-    record.chat_messages.extend([user_message, assistant_message])
+    record.chat_messages.append(assistant_message)
+
     db.commit()
     db.refresh(user_message)
     db.refresh(assistant_message)
