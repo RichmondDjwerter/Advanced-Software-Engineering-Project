@@ -1,0 +1,32 @@
+# Chat providers: what the UI shows and how a provider is set up.
+# The behaviour (API calls, checking a key or server) lives in the provider classes.
+# Every class registered in chat/registry.py needs an entry here, and vice versa.
+
+default = "local"
+
+[providers.local]
+label = "Local LLM"
+external = false  # data stays on this computer
+
+[providers.local.setup]
+title = "Start the local model"
+steps = [
+  "Start an OpenAI-compatible model server, e.g. llama-server with Qwen3-VL.",
+  "It must listen on ULTRON_LLM_BASE_URL (default: http://127.0.0.1:8080/v1).",
+  "Then check again.",
+]
+
+[providers.gemini]
+label = "Gemini"
+external = true  # document content is sent to Google
+
+[providers.gemini.setup]
+title = "Set up Gemini"
+steps = [
+  "Create an API key.",
+  "Add this line to backend/.env (create the file if it does not exist) and replace your-key.",
+  "Save the file, then check again.",
+]
+link = { label = "Open Google AI Studio", url = "https://aistudio.google.com/apikey" }
+copy_line = "GEMINI_API_KEY=your-key"
+placeholder = "your-key"  # counts as no key
