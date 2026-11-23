@@ -9,6 +9,7 @@ import {
   updateHistoricalRecord,
 } from "@/app/lib/api";
 import { EditMode } from "@/app/components/EditMode";
+import { useRecordRevision } from "@/app/components/RecordRevision";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import type { HistoricalRecord } from "@/app/types/historicalRecord";
@@ -28,6 +29,7 @@ export function TranscriptionView({
   selectedLine,
   onLineClick,
 }: Props) {
+  const { revision } = useRecordRevision();
   const [text, setText] = useState("");
   const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,7 +107,7 @@ export function TranscriptionView({
 
     void loadTranscription();
     return () => controller.abort();
-  }, [recordId]);
+  }, [recordId, revision]);
 
   function renderContent() {
     if (loading) {

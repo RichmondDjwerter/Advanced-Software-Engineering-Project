@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { API_URL } from "@/app/lib/api";
+import { backendError } from "@/app/api/backendError";
 import type { ChatMessage } from "@/app/types/chat";
 
 // context of the chat
@@ -50,10 +51,7 @@ export async function POST(request: Request, ctx: Ctx) {
   });
 
   if (!res.ok) {
-    return NextResponse.json(
-      { error: "The chat is currently unavailable." },
-      { status: res.status },
-    );
+    return backendError(res, "The chat is currently unavailable.");
   }
 
   return NextResponse.json(await res.json());

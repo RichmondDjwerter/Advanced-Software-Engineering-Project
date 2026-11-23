@@ -2,6 +2,7 @@
 
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageWithZoom } from "@/app/components/ImageWithZoom";
+import { useRecordRevision } from "@/app/components/RecordRevision";
 import { useEffect, useState } from "react";
 import { HistoricalRecord } from "@/app/types/historicalRecord";
 
@@ -22,6 +23,7 @@ export function OriginalView({
   selectedLine,
   onLineClick,
 }: OriginalViewProps) {
+  const { revision } = useRecordRevision();
   const [record, setRecord] = useState<HistoricalRecord | null>(null);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export function OriginalView({
     loadRecord();
 
     return () => controller.abort();
-  }, [id]);
+  }, [id, revision]);
 
   return (
     <Card className="h-full">

@@ -526,9 +526,18 @@ class TranscriptionCompareRequest(BaseModel):
     _check_provider = field_validator("provider")(known_provider)
 
 
+class ComparisonImage(BaseModel):
+    """The source image, so that the review can show the part of each row."""
+
+    name: str
+    width: int
+    height: int
+
+
 class TranscriptionComparisonOut(BaseModel):
     current_text: str
     rows: list[Row]
+    image: ComparisonImage
 
 
 @app.get("/chat/providers")
@@ -626,9 +635,14 @@ def compare_transcription(
     db.refresh(record)
     current_text = record.extracted_text or ""
 
+    with Image.open(image_path) as source:
+        width, height = source.size
+
     return {
         "current_text": current_text,
         "rows": build_rows(current_text, record_response(record)["lines"], proposed),
+        # served by /uploads, the name is the stored file, not the uploaded one
+        "image": {"name": image_path.name, "width": width, "height": height},
     }
 
 

@@ -25,6 +25,17 @@ TestingSessionLocal = sessionmaker(
 )
 
 
+@pytest.fixture(autouse=True)
+def no_local_model_server(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Tests must not depend on a model server running on this machine.
+    from chat import local_provider
+
+    def refuse(*args, **kwargs):
+        raise local_provider.URLError("no model server in tests")
+
+    monkeypatch.setattr(local_provider, "urlopen", refuse)
+
+
 @pytest.fixture
 def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     Base.metadata.drop_all(bind=test_engine)

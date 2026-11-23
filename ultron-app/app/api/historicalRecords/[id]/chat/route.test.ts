@@ -88,6 +88,22 @@ describe("chat route", () => {
     });
   });
 
+  it("POST passes the reason of the backend on", async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({ detail: "Gemini is not configured." }, { status: 503 }),
+    );
+
+    const response = await POST(
+      postRequest({ message: "Hello", provider: "gemini" }),
+      ctx,
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      error: "Gemini is not configured.",
+    });
+  });
+
   it("GET returns the chat history of the record", async () => {
     fetchMock.mockResolvedValue(Response.json(messages));
 

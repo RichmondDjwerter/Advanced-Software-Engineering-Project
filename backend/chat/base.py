@@ -7,7 +7,7 @@ endpoint can be swapped without changing the API layer.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar, Literal
+from typing import Any, ClassVar, Literal
 
 from models import HistoricalRecord
 
@@ -32,6 +32,10 @@ class ProviderInfo:
     name: str
     label: str
     available: bool
+    external: bool
+    """True if the provider sends document content off this computer."""
+    setup: dict[str, Any]
+    """Setup steps from providers.toml, shown when the provider is not available."""
 
 
 class ChatProviderError(Exception):
@@ -50,10 +54,7 @@ class ChatProvider(ABC):
     """
 
     name: ClassVar[str]
-    """Unique registry key, e.g. "gemini"."""
-
-    label: ClassVar[str]
-    """Human-readable name shown in the UI, e.g. "Gemini"."""
+    """Unique registry key, e.g. "gemini". Label and setup steps are in providers.toml."""
 
     @classmethod
     @abstractmethod
@@ -81,3 +82,17 @@ class ChatProvider(ABC):
 
         This call is synchronous and blocking, so callers run it in a thread pool.
         """
+
+    def transcribe(self, image_path: Path) -> list[dict[str, Any]]:
+        """Return the provider's own transcription: lines with text, x, y, width, height.
+
+        Optional: only providers that can read images override it. The OCR text is
+        deliberately not passed, so that the result is independent of it.
+
+        Raises:
+            ChatProviderError: If the call fails or is not supported.
+        """
+        from .config import provider_config
+
+        label = provider_config(self.name).label
+        raise ChatProviderError(f"{label} does not support transcription.")
