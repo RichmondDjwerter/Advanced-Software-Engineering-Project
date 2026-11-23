@@ -1,7 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { ChevronsLeftIcon, ChevronsRightIcon } from "lucide-react";
+import { Fragment } from "react";
+import { ChevronsLeftIcon, ChevronsRightIcon, Undo2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cropForRow, cropStyle } from "@/app/components/imageCrop";
+import { chosenLines } from "@/app/components/mergeTranscription";
 import type {
   Choice,
   ComparisonImage,
@@ -19,10 +20,9 @@ import type {
   ReviewRow,
 } from "@/app/types/transcriptionReview";
 
-const currentColor =
-  "border-sky-300 bg-sky-50 text-sky-900 dark:border-sky-700 dark:bg-sky-950 dark:text-sky-100";
+const currentColor = "bg-sky-50 text-sky-900 dark:bg-sky-950 dark:text-sky-100";
 const proposedColor =
-  "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100";
+  "bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-100";
 
 function Lines({ lines }: { lines: ReviewLine[] }) {
   if (lines.length === 0) {
@@ -35,44 +35,9 @@ function Lines({ lines }: { lines: ReviewLine[] }) {
   ));
 }
 
-/** One version of a row. Clicking it again removes the choice. */
-function Option({
-  title,
-  selected,
-  color,
-  ariaLabel,
-  disabled,
-  onClick,
-  children,
-}: {
-  title: string;
-  selected: boolean;
-  color: string;
-  ariaLabel: string;
-  disabled: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={ariaLabel}
-      aria-pressed={selected}
-      disabled={disabled}
-      onClick={onClick}
-      className={`flex min-w-0 flex-col gap-1 rounded-lg border p-2 text-left transition-colors disabled:opacity-60 ${
-        selected ? `${color} ring-2 ring-coral` : "border-border hover:bg-muted"
-      }`}
-    >
-      <span className="text-xs font-medium text-muted-foreground">{title}</span>
-      {children}
-    </button>
-  );
-}
-
 /**
- * Shows each part of the page with the current and the proposed transcription
- * below it. Choose per row, then overwrite the current transcription.
+ * Current on the left, the proposal of the model on the right. The middle shows
+ * the part of the page of each row, and below it the version that was chosen.
  */
 export function TranscriptionReview({
   open,
@@ -106,23 +71,18 @@ export function TranscriptionReview({
     height: image.height,
   };
 
-  // clicking the chosen version again makes the row unresolved
   const choose = (index: number, choice: Choice) =>
-    onChoices(
-      choices.map((old, i) =>
-        i !== index ? old : old === choice ? null : choice,
-      ),
-    );
+    onChoices(choices.map((old, i) => (i === index ? choice : old)));
   const chooseAll = (choice: Choice) => onChoices(rows.map(() => choice));
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && !saving && onClose()}>
-      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-4xl">
+      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-6xl">
         <DialogHeader className="pr-8">
           <DialogTitle>Review transcription</DialogTitle>
           <DialogDescription>
-            Compare each part of the page with both transcriptions and choose
-            one. {resolved} of {rows.length} resolved.
+            Choose which version each line uses. {resolved} of {rows.length}{" "}
+            resolved.
           </DialogDescription>
         </DialogHeader>
 
@@ -152,75 +112,141 @@ export function TranscriptionReview({
           </Button>
         </div>
 
-        <ol className="min-h-0 flex-1 overflow-auto rounded-lg border">
-          {rows.map((row, index) => {
-            const choice = choices[index];
-            const crop = cropForRow(row);
-            const wholePage = crop.width === 1 && crop.height === 1;
-            return (
-              <li
-                key={index}
-                className="flex flex-col gap-2 border-b p-3 last:border-b-0"
+        <div className="min-h-0 flex-1 overflow-auto rounded-lg border">
+          <div className="grid min-w-[56rem] grid-cols-[2rem_1fr_1.4fr_1fr]">
+            {["#", "Current", "Result", label].map((title, column) => (
+              <div
+                key={column}
+                className={`sticky top-0 z-10 border-b p-2 font-medium ${
+                  column === 1
+                    ? currentColor
+                    : column === 3
+                      ? proposedColor
+                      : "bg-popover"
+                }`}
               >
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="font-medium">{index + 1}</span>
-                  <span>
-                    {choice === null
-                      ? "Unresolved, keeps current"
-                      : choice === "proposed"
-                        ? `Uses ${label}`
-                        : choice === "both"
-                          ? "Uses both"
-                          : "Uses current"}
-                  </span>
-                </div>
+                {title}
+              </div>
+            ))}
 
-                <div
-                  data-crop
-                  role="img"
-                  aria-label={`Part of the page for row ${index + 1}`}
-                  className={`w-full rounded border bg-muted ${wholePage ? "max-w-sm" : ""}`}
-                  style={cropStyle(crop, imageInfo)}
-                />
+            {rows.map((row, index) => {
+              const choice = choices[index];
+              const crop = cropForRow(row);
+              const wholePage = crop.width === 1 && crop.height === 1;
+              return (
+                <Fragment key={index}>
+                  <div className="border-b p-2 text-muted-foreground">
+                    {index + 1}
+                  </div>
 
-                <div className="grid gap-2 sm:grid-cols-3">
-                  <Option
-                    title="Current"
-                    selected={choice === "current"}
-                    color={currentColor}
-                    ariaLabel={`Use current for row ${index + 1}`}
-                    disabled={saving}
-                    onClick={() => choose(index, "current")}
+                  <div
+                    className={`flex items-start gap-2 border-b p-2 ${
+                      choice === "current" || choice === "both"
+                        ? currentColor
+                        : choice === "proposed"
+                          ? "text-muted-foreground"
+                          : ""
+                    }`}
                   >
-                    <Lines lines={row.current} />
-                  </Option>
-                  <Option
-                    title={label}
-                    selected={choice === "proposed"}
-                    color={proposedColor}
-                    ariaLabel={`Use ${label} for row ${index + 1}`}
-                    disabled={saving}
-                    onClick={() => choose(index, "proposed")}
+                    <div className="min-w-0 flex-1">
+                      <Lines lines={row.current} />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      aria-label={`Use current for row ${index + 1}`}
+                      disabled={saving}
+                      onClick={() => choose(index, "current")}
+                    >
+                      <ChevronsRightIcon />
+                    </Button>
+                  </div>
+
+                  <div
+                    data-result
+                    className="flex flex-col gap-2 border-x border-b p-2"
                   >
-                    <Lines lines={row.proposed} />
-                  </Option>
-                  <Option
-                    title="Both"
-                    selected={choice === "both"}
-                    color="border-border bg-muted"
-                    ariaLabel={`Use both for row ${index + 1}`}
-                    disabled={saving}
-                    onClick={() => choose(index, "both")}
+                    <div
+                      data-crop
+                      role="img"
+                      aria-label={`Part of the page for row ${index + 1}`}
+                      className={`w-full rounded border bg-muted ${wholePage ? "max-w-xs self-center" : ""}`}
+                      style={cropStyle(crop, imageInfo)}
+                    />
+
+                    <div className="flex items-start gap-2">
+                      {choice === null ? (
+                        <>
+                          <span className="min-w-0 flex-1 text-muted-foreground">
+                            Unresolved
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            aria-label={`Use both for row ${index + 1}`}
+                            disabled={saving}
+                            onClick={() => choose(index, "both")}
+                          >
+                            Both
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="min-w-0 flex-1">
+                            <span
+                              className={`mb-1 inline-block rounded px-1.5 text-xs ${
+                                choice === "proposed"
+                                  ? proposedColor
+                                  : choice === "current"
+                                    ? currentColor
+                                    : "border"
+                              }`}
+                            >
+                              {choice === "proposed" ? label : choice}
+                            </span>
+                            <Lines lines={chosenLines(row, choice)} />
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="icon-sm"
+                            aria-label={`Undo choice for row ${index + 1}`}
+                            disabled={saving}
+                            onClick={() => choose(index, null)}
+                          >
+                            <Undo2Icon />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div
+                    className={`flex items-start gap-2 border-b p-2 ${
+                      choice === "proposed" || choice === "both"
+                        ? proposedColor
+                        : choice === "current"
+                          ? "text-muted-foreground"
+                          : ""
+                    }`}
                   >
-                    <span className="text-muted-foreground">
-                      Current, then {label}
-                    </span>
-                  </Option>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      aria-label={`Use ${label} for row ${index + 1}`}
+                      disabled={saving}
+                      onClick={() => choose(index, "proposed")}
+                    >
+                      <ChevronsLeftIcon />
+                    </Button>
+                    <div className="min-w-0 flex-1">
+                      <Lines lines={row.proposed} />
+                    </div>
+                  </div>
+                </Fragment>
+              );
+            })}
+          </div>
+        </div>
 
         {error && (
           <p role="alert" className="text-destructive">
