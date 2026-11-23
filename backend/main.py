@@ -3,7 +3,6 @@ import logging
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Literal
 
 import uvicorn
 from fastapi import (
@@ -16,18 +15,18 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import Engine, inspect, text
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
-from chat.base import ChatProvider
-from chat.gemini_provider import GeminiProvider
-from chat.local_provider import LocalLLMProvider
+from chat import registry
+from chat.base import ChatProvider, ChatProviderError, ProviderMessage
 from database import Base, engine, get_db
 from language_detection import detect_language
 from models import HistoricalRecord
 from ocr import OCRResult, transcribe_image
+from transcription_review import Row, build_rows
 from translation import translate_text
 
 Base.metadata.create_all(bind=engine)
@@ -107,11 +106,23 @@ app.mount(
 )
 
 
+class LineBox(BaseModel):
+    text: str
+    x: float
+    y: float
+    width: float
+    height: float
+
+
 class HistoricalRecordUpdate(BaseModel):
     # Only the fields that are sent are changed.
     name: str | None = None
     extracted_text: str | None = None
     translated_text: str | None = None
+    # Replaces the boxes that are linked to the lines of extracted_text by index.
+    lines: list[LineBox] | None = None
+    # If sent, the update fails when the transcription was changed in the meantime.
+    expected_text: str | None = None
 
 
 # Classes for Chat
@@ -125,9 +136,17 @@ class ChatMessageOut(BaseModel):
     created_at: datetime
 
 
+def known_provider(name: str) -> str:
+    if name not in registry.names():
+        raise ValueError(f"Unknown provider. Use one of {registry.names()}.")
+    return name
+
+
 class ChatMessageCreate(BaseModel):
     content: str
-    provider: Literal["local", "gemini"] = "local"
+    provider: str = Field(default_factory=registry.default_name)
+
+    _check_provider = field_validator("provider")(known_provider)
 
 
 # ROOT ENDPOINT
@@ -455,6 +474,22 @@ def update_historical_record(
     if "name" in changes and not changes["name"]:
         raise HTTPException(status_code=422, detail="The name cannot be empty.")
 
+    expected_text = changes.pop("expected_text", None)
+    if expected_text is not None and expected_text != (record.extracted_text or ""):
+        raise HTTPException(
+            status_code=409,
+            detail="The transcription was changed in the meantime. Discard and compare again.",
+        )
+
+    lines = changes.pop("lines", None)
+    if lines is not None:
+        new_text = changes.get("extracted_text", record.extracted_text) or ""
+        if lines and len(lines) != len(new_text.split("\n")):
+            raise HTTPException(
+                status_code=422, detail="There must be one box per line of text."
+            )
+        record.line_data = json.dumps(lines)
+
     for field, value in changes.items():
         setattr(record, field, value)
 
@@ -484,6 +519,28 @@ def delete_historical_record(
 
 
 # Chat Routes
+class TranscriptionCompareRequest(BaseModel):
+    # No default: the image must only leave the machine if a provider was chosen.
+    provider: str
+
+    _check_provider = field_validator("provider")(known_provider)
+
+
+class TranscriptionComparisonOut(BaseModel):
+    current_text: str
+    rows: list[Row]
+
+
+@app.get("/chat/providers")
+def get_chat_providers():
+    """Lists the providers with their setup steps, never their credentials"""
+    return registry.infos()
+
+
+def create_chat_provider(name: str) -> ChatProvider:
+    return registry.create(name)
+
+
 @app.get("/historical_records/{record_id}/chat", response_model=list[ChatMessageOut])
 def get_chat_history(record_id: str, db: Session = Depends(get_db)):
     record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
@@ -516,18 +573,19 @@ def post_message(
     user_message = ChatMessage(role="user", content=content)
     record.chat_messages.append(user_message)
 
-    chat_provider: ChatProvider
+    chat_provider = create_chat_provider(chat_message.provider)
 
-    if chat_message.provider == "local":
-        chat_provider = LocalLLMProvider()
-    else:
-        chat_provider = GeminiProvider()
+    history = [
+        ProviderMessage(
+            role="user" if message.role == "user" else "assistant",
+            content=message.content,
+        )
+        for message in record.chat_messages
+    ]
 
     try:
-        assistant_reply = chat_provider.reply(
-            record.chat_messages, record, image_path=None
-        )
-    except RuntimeError as error:
+        assistant_reply = chat_provider.reply(history, record, image_path=None)
+    except (ChatProviderError, RuntimeError) as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
 
     assistant_message = ChatMessage(role="assistant", content=assistant_reply)
@@ -539,6 +597,39 @@ def post_message(
     db.refresh(assistant_message)
 
     return [user_message, assistant_message]
+
+
+@app.post(
+    "/historical_records/{record_id}/compare-transcription",
+    response_model=TranscriptionComparisonOut,
+)
+def compare_transcription(
+    record_id: str,
+    payload: TranscriptionCompareRequest,
+    db: Session = Depends(get_db),
+):
+    """Compares an LLM transcription of the image with the current one, saves nothing"""
+    record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Historical record not found")
+
+    image_path = next(UPLOAD_DIR.glob(f"{record.id}.*"), None)
+    if image_path is None:
+        raise HTTPException(status_code=404, detail="The document image was not found.")
+
+    try:
+        proposed = create_chat_provider(payload.provider).transcribe(image_path)
+    except ChatProviderError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+
+    # Gemini takes a while, the transcription may have been edited meanwhile.
+    db.refresh(record)
+    current_text = record.extracted_text or ""
+
+    return {
+        "current_text": current_text,
+        "rows": build_rows(current_text, record_response(record)["lines"], proposed),
+    }
 
 
 if __name__ == "__main__":
