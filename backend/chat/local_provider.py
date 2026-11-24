@@ -8,7 +8,7 @@ import logging
 import mimetypes
 import os
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
@@ -16,6 +16,12 @@ from urllib.request import Request, urlopen
 from models import HistoricalRecord
 
 from .base import ChatProvider, ChatProviderError
+from .transcription import (
+    TRANSCRIPTION_PROMPT,
+    TRANSCRIPTION_SCHEMA,
+    parse_transcription,
+    prepare_image,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -83,20 +89,24 @@ class LocalLLMProvider(ChatProvider):
     """
 
     name: ClassVar[str] = "local"
-    label: ClassVar[str] = "Local LLM"
 
     @classmethod
     def is_configured(cls) -> bool:
+        """True if the model server answers, so the UI can offer its setup steps."""
         try:
-            _local_chat_url()
-            return True
+            endpoint, _ = _local_chat_url()
         except RuntimeError:
+            return False
+        models = endpoint.removesuffix("/chat/completions") + "/models"
+        try:
+            with urlopen(models, timeout=1):
+                return True
+        except HTTPError, URLError, TimeoutError, OSError:
             return False
 
     def reply(self, history, system_prompt, image_path=None):
         try:
             """Ask the local multimodal model using only this record as evidence."""
-            endpoint, model_name = _local_chat_url()
             system_content = (
                 SYSTEM_PROMPT
                 + "\n\nSUPPLIED SOURCES:\n"
@@ -130,51 +140,99 @@ class LocalLLMProvider(ChatProvider):
                     }
                 )
             messages.append({"role": "user", "content": current_content})
-
-            payload = json.dumps(
-                {
-                    "model": model_name,
-                    "messages": messages,
-                    "temperature": 0.2,
-                    "max_tokens": 700,
-                    "stream": False,
-                }
-            ).encode("utf-8")
-            request = Request(
-                endpoint,
-                data=payload,
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-
-            try:
-                with urlopen(
-                    request,
-                    timeout=float(os.getenv("ULTRON_LLM_TIMEOUT_SECONDS", "180")),
-                ) as response:
-                    result = json.loads(response.read().decode("utf-8"))
-            except HTTPError as error:
-                detail = error.read().decode("utf-8", errors="replace")[:1000]
-                logger.error("Local LLM returned HTTP %s: %s", error.code, detail)
-                raise RuntimeError(
-                    "The local manuscript model returned an error. Check that the "
-                    "Qwen3-VL model server is running and ready."
-                ) from error
-            except (URLError, TimeoutError, OSError) as error:
-                logger.exception("Could not reach the local manuscript model.")
-                raise RuntimeError(
-                    "Could not reach the local Qwen3-VL model. Start the local model "
-                    "server, then try again."
-                ) from error
-            except (json.JSONDecodeError, KeyError, IndexError, TypeError) as error:
-                logger.exception("The local model returned an invalid chat response.")
-                raise RuntimeError(
-                    "The local model returned an invalid response."
-                ) from error
-
-            answer = result["choices"][0]["message"]["content"]
-            if not isinstance(answer, str) or not answer.strip():
-                raise RuntimeError("The local model returned an empty answer.")
-            return answer.strip()
+            return self._complete(messages, temperature=0.2, max_tokens=700)
         except RuntimeError as e:
             raise ChatProviderError(str(e)) from e
+
+    def transcribe(self, image_path: Path) -> list[dict[str, Any]]:
+        try:
+            image = prepare_image(image_path)
+        except (OSError, ValueError) as e:
+            raise ChatProviderError("The document image could not be read.") from e
+
+        messages: list[dict[str, object]] = [
+            {"role": "system", "content": TRANSCRIPTION_PROMPT},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Transcribe this image."},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{image}"},
+                    },
+                ],
+            },
+        ]
+        try:
+            answer = self._complete(
+                messages,
+                temperature=0,
+                max_tokens=4096,
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "transcription",
+                        "schema": TRANSCRIPTION_SCHEMA,
+                    },
+                },
+            )
+            return parse_transcription(answer)
+        except RuntimeError as e:
+            raise ChatProviderError(str(e)) from e
+        except ValueError as e:
+            raise ChatProviderError(
+                "The local model returned an unreadable transcription. "
+                "Please try again."
+            ) from e
+
+    def _complete(self, messages: list[dict[str, object]], **options: Any) -> str:
+        """Send one request to the OpenAI-compatible server and return the answer.
+
+        Raises:
+            RuntimeError: With a message for the user if the request fails.
+        """
+        endpoint, model_name = _local_chat_url()
+        payload = json.dumps(
+            {"model": model_name, "messages": messages, "stream": False, **options}
+        ).encode("utf-8")
+        request = Request(
+            endpoint,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+
+        try:
+            with urlopen(
+                request,
+                timeout=float(os.getenv("ULTRON_LLM_TIMEOUT_SECONDS", "180")),
+            ) as response:
+                result = json.loads(response.read().decode("utf-8"))
+        except HTTPError as error:
+            detail = error.read().decode("utf-8", errors="replace")[:1000]
+            logger.error("Local LLM returned HTTP %s: %s", error.code, detail)
+            raise RuntimeError(
+                "The local manuscript model returned an error. Check that the "
+                "Qwen3-VL model server is running and ready."
+            ) from error
+        except (URLError, TimeoutError, OSError) as error:
+            logger.exception("Could not reach the local manuscript model.")
+            raise RuntimeError(
+                "Could not reach the local Qwen3-VL model. Start the local model "
+                "server, then try again."
+            ) from error
+        except (json.JSONDecodeError, KeyError, IndexError, TypeError) as error:
+            logger.exception("The local model returned an invalid chat response.")
+            raise RuntimeError(
+                "The local model returned an invalid response."
+            ) from error
+
+        try:
+            answer = result["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as error:
+            raise RuntimeError(
+                "The local model returned an invalid response."
+            ) from error
+        if not isinstance(answer, str) or not answer.strip():
+            raise RuntimeError("The local model returned an empty answer.")
+        return answer.strip()

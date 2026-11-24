@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { API_URL } from "@/app/lib/api";
+import { backendError } from "@/app/api/backendError";
 
 export async function GET(request: Request) {
   const id = new URL(request.url).searchParams.get("id");
@@ -84,10 +85,7 @@ export async function PUT(request: Request) {
   );
 
   if (!res.ok) {
-    return NextResponse.json(
-      { error: "Failed to update historical record" },
-      { status: res.status },
-    );
+    return backendError(res, "Failed to update historical record");
   }
 
   return NextResponse.json(await res.json());

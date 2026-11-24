@@ -66,6 +66,14 @@ On the first non-empty translation, the backend downloads the FastText language-
 
 The detected language code is saved with each record and shown on its transcription panel. Older records with transcription text are automatically checked when opened.
 
+#### Optional: Gemini
+
+Gemini can be used for the chat and for "Compare transcription" instead of the local LLM. Document content is sent to Google when you use it.
+
+1. Create a key at https://aistudio.google.com/apikey.
+2. Copy `backend/.env.example` to `backend/.env` (git-ignored, UTF-8) and replace `your-key`. Optionally set `GEMINI_MODEL`.
+3. Select Gemini in the chat. If no key is found, a dialog guides you through these steps. A backend restart is not needed.
+
 ### 4. Set up and start the frontend
 
 Open a new terminal and navigate to the `frontend` directory. 

@@ -11,6 +11,7 @@ import { ArrowLeftIcon, EditIcon } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
+import { RecordRevisionProvider } from "@/app/components/RecordRevision";
 
 export default function HistoricalRecordClient({
   id,
@@ -171,7 +172,7 @@ export default function HistoricalRecordClient({
   }
 
   return (
-    <>
+    <RecordRevisionProvider>
       <div className="flex items-center gap-3">
         <Link href="/historical-records">
           <Button variant="outline" size="icon" aria-label="Go Back">
@@ -263,6 +264,6 @@ export default function HistoricalRecordClient({
         </div>
         {chat}
       </div>
-    </>
+    </RecordRevisionProvider>
   );
 }

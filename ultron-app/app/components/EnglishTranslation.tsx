@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { CardContent } from "@/components/ui/card";
 import { API_URL, updateHistoricalRecord } from "@/app/lib/api";
 import { EditMode } from "@/app/components/EditMode";
+import { useRecordRevision } from "@/app/components/RecordRevision";
 import { Spinner } from "@/components/ui/spinner";
 
 type Props = {
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export function EnglishTranslation({ recordId }: Props) {
+  const { revision } = useRecordRevision();
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -46,7 +48,7 @@ export function EnglishTranslation({ recordId }: Props) {
 
     void load();
     return () => controller.abort();
-  }, [recordId]);
+  }, [recordId, revision]);
 
   if (loading) {
     return (
