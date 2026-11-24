@@ -48,7 +48,7 @@ export async function translateHistoricalRecord(
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, expected_text: text }),
     },
   );
 

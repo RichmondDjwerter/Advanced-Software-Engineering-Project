@@ -34,7 +34,9 @@ Base.metadata.create_all(bind=engine)
 
 def migrate_historical_record_columns(database_engine: Engine = engine) -> None:
     inspector = inspect(database_engine)
-    columns = {column["name"] for column in inspector.get_columns("historical_records")}
+    columns = {
+        column["name"] for column in inspector.get_columns("historical_records")
+    }
     has_chat_messages_table = inspector.has_table("chat_messages")
     chat_columns = (
         {column["name"] for column in inspector.get_columns("chat_messages")}
@@ -347,6 +349,8 @@ async def detect_historical_record_language(
 class TranslateRequest(BaseModel):
     # Optional override, so translation can be tested without relying on OCR.
     text: str | None = None
+    # Frontend requests set this to reject a translation for an outdated edit.
+    expected_text: str | None = None
 
 
 @app.post("/historical_records/{record_id}/translate")
@@ -361,16 +365,14 @@ async def translate_historical_record(
     if record is None:
         raise HTTPException(status_code=404, detail="Historical record not found")
 
+    current_text = record.extracted_text or ""
     source_text = (
         payload.text
         if payload is not None and payload.text is not None
-        else record.extracted_text or ""
+        else current_text
     )
-    if (
-        payload is not None
-        and payload.text is not None
-        and payload.text != (record.extracted_text or "")
-    ):
+    expected_text = payload.expected_text if payload is not None else None
+    if expected_text is not None and expected_text != current_text:
         raise HTTPException(
             status_code=409,
             detail="The transcription changed before translation finished. Try again with the current text.",
@@ -398,7 +400,7 @@ async def translate_historical_record(
     db.refresh(record)
     if (
         record.transcription_revision != source_revision
-        or (record.extracted_text or "") != source_text
+        or (record.extracted_text or "") != current_text
     ):
         raise HTTPException(
             status_code=409,
