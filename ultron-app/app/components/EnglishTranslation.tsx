@@ -14,7 +14,7 @@ type Props = {
 };
 
 export function EnglishTranslation({ recordId }: Props) {
-  const { revision } = useRecordRevision();
+  const { revision, refresh } = useRecordRevision();
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -78,8 +78,10 @@ export function EnglishTranslation({ recordId }: Props) {
       onSave={async (edited) => {
         await updateHistoricalRecord(recordId, {
           translated_text: edited,
+          revision_source: "Manual translation edit",
         });
         setText(edited);
+        refresh();
       }}
     />
   );

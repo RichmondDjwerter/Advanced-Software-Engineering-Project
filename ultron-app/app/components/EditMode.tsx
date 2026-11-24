@@ -76,7 +76,7 @@ export function EditMode({
           onChange={(event) => setDraft(event.target.value)}
           disabled={saving}
           aria-label="Edit text"
-          className="min-h-0 w-full flex-1 resize-none field-sizing-fixed text-sm leading-7"
+          className="min-h-0 w-full flex-1 resize-none field-sizing-fixed text-base leading-8"
         />
       );
     }
@@ -89,7 +89,7 @@ export function EditMode({
 
     return (
       <ScrollArea className="min-h-0 w-full flex-1">
-        <p className="whitespace-pre-wrap break-words px-4 text-sm leading-7">
+        <p className="whitespace-pre-wrap break-words px-4 text-base leading-8">
           {renderText ? renderText() : text}
         </p>
       </ScrollArea>

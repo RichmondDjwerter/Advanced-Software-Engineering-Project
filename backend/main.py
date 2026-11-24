@@ -24,14 +24,12 @@ from chat import registry
 from chat.base import ChatProvider, ChatProviderError, ProviderMessage
 from database import Base, engine, get_db
 from language_detection import detect_language
-from models import HistoricalRecord
+from models import ChatMessage, HistoricalRecord, TranscriptionSnapshot
 from ocr import OCRResult, transcribe_image
 from transcription_review import Row, build_rows
 from translation import translate_text
 
 Base.metadata.create_all(bind=engine)
-
-from models import ChatMessage
 
 
 def migrate_historical_record_columns(database_engine: Engine = engine) -> None:
@@ -39,11 +37,16 @@ def migrate_historical_record_columns(database_engine: Engine = engine) -> None:
         column["name"]
         for column in inspect(database_engine).get_columns("historical_records")
     }
+    chat_columns = {
+        column["name"]
+        for column in inspect(database_engine).get_columns("chat_messages")
+    }
     missing_columns = {
         "line_data": "TEXT",
         "image_width": "INTEGER",
         "image_height": "INTEGER",
         "detected_language": "VARCHAR(16)",
+        "transcription_revision": "INTEGER NOT NULL DEFAULT 1",
     }
 
     with database_engine.begin() as connection:
@@ -55,6 +58,14 @@ def migrate_historical_record_columns(database_engine: Engine = engine) -> None:
                         f"ADD COLUMN {name} {column_type}"
                     )
                 )
+
+        if "source_revision" not in chat_columns:
+            connection.execute(
+                text(
+                    "ALTER TABLE chat_messages "
+                    "ADD COLUMN source_revision INTEGER NOT NULL DEFAULT 1"
+                )
+            )
 
 
 migrate_historical_record_columns()
@@ -123,6 +134,8 @@ class HistoricalRecordUpdate(BaseModel):
     lines: list[LineBox] | None = None
     # If sent, the update fails when the transcription was changed in the meantime.
     expected_text: str | None = None
+    # Human-readable reason saved with a transcription snapshot.
+    revision_source: str | None = None
 
 
 # Classes for Chat
@@ -179,9 +192,53 @@ def record_response(record: HistoricalRecord):
         "image_width": record.image_width,
         "image_height": record.image_height,
         "detected_language": record.detected_language,
+        "transcription_revision": record.transcription_revision,
         "created_at": record.created_at.isoformat(),
         "updated_at": record.updated_at.isoformat(),
     }
+
+
+def _snapshot_dict(snapshot: TranscriptionSnapshot) -> dict[str, object]:
+    try:
+        lines = json.loads(snapshot.line_data) if snapshot.line_data else []
+    except json.JSONDecodeError:
+        lines = []
+    return {
+        "revision": snapshot.revision,
+        "extracted_text": snapshot.extracted_text,
+        "translated_text": snapshot.translated_text,
+        "lines": lines,
+        "source": snapshot.source,
+        "created_at": snapshot.created_at.isoformat(),
+    }
+
+
+def _save_current_snapshot(
+    db: Session, record: HistoricalRecord, source: str
+) -> TranscriptionSnapshot:
+    snapshot = (
+        db.query(TranscriptionSnapshot)
+        .filter(
+            TranscriptionSnapshot.historical_record_id == record.id,
+            TranscriptionSnapshot.revision == record.transcription_revision,
+        )
+        .first()
+    )
+    if snapshot is None:
+        snapshot = TranscriptionSnapshot(
+            historical_record_id=record.id,
+            revision=record.transcription_revision,
+            extracted_text=record.extracted_text or "",
+            translated_text=record.translated_text,
+            line_data=record.line_data,
+            source=source[:120],
+        )
+        db.add(snapshot)
+    else:
+        # The translation may arrive after the transcription snapshot is made.
+        snapshot.translated_text = record.translated_text
+        snapshot.line_data = record.line_data
+    return snapshot
 
 
 def detect_transcription_language(text: str, language: str | None = None) -> str | None:
@@ -222,6 +279,47 @@ def get_historical_record(
         )
 
     return record_response(record)
+
+
+@app.get("/historical_records/{record_id}/transcription-history")
+def get_transcription_history(
+    record_id: str,
+    db: Session = Depends(get_db),
+):
+    record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
+    if record is None:
+        raise HTTPException(status_code=404, detail="Historical record not found")
+
+    snapshots = (
+        db.query(TranscriptionSnapshot)
+        .filter(TranscriptionSnapshot.historical_record_id == record_id)
+        .order_by(TranscriptionSnapshot.revision.desc())
+        .all()
+    )
+    if not snapshots:
+        try:
+            lines = json.loads(record.line_data) if record.line_data else []
+        except json.JSONDecodeError:
+            lines = []
+        return [
+            {
+                "revision": record.transcription_revision,
+                "extracted_text": record.extracted_text or "",
+                "translated_text": record.translated_text,
+                "lines": lines,
+                "source": "Current version (history tracking started recently)",
+                "created_at": record.updated_at.isoformat(),
+                "is_current": True,
+            }
+        ]
+
+    return [
+        {
+            **_snapshot_dict(snapshot),
+            "is_current": snapshot.revision == record.transcription_revision,
+        }
+        for snapshot in snapshots
+    ]
 
 
 @app.post("/historical_records/{record_id}/detect-language")
@@ -268,6 +366,12 @@ async def translate_historical_record(
         if payload is not None and payload.text is not None
         else record.extracted_text or ""
     )
+    if payload is not None and payload.text is not None and payload.text != (record.extracted_text or ""):
+        raise HTTPException(
+            status_code=409,
+            detail="The transcription changed before translation finished. Try again with the current text.",
+        )
+    source_revision = record.transcription_revision
 
     try:
         detected_language = await run_in_threadpool(
@@ -287,8 +391,24 @@ async def translate_historical_record(
             detail="Translation failed. Check the backend model setup and try again.",
         ) from error
 
+    db.refresh(record)
+    if (
+        record.transcription_revision != source_revision
+        or (record.extracted_text or "") != source_text
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="The transcription changed while translation was running. Try again with the current text.",
+        )
+
+    translation_changed = translated != (record.translated_text or "")
+    if translation_changed:
+        _save_current_snapshot(db, record, "Before translation update")
+        record.transcription_revision += 1
+
     record.translated_text = translated
     record.detected_language = detected_language
+    _save_current_snapshot(db, record, "Machine translation refreshed")
     db.commit()
 
     return {
@@ -420,6 +540,8 @@ async def create_historical_record(
 
     try:
         db.add(new_record)
+        db.flush()
+        _save_current_snapshot(db, new_record, "Initial TrOCR transcription")
         db.commit()
         db.refresh(new_record)
 
@@ -474,6 +596,7 @@ def update_historical_record(
     if "name" in changes and not changes["name"]:
         raise HTTPException(status_code=422, detail="The name cannot be empty.")
 
+    revision_source = changes.pop("revision_source", None) or "Manual edit"
     expected_text = changes.pop("expected_text", None)
     if expected_text is not None and expected_text != (record.extracted_text or ""):
         raise HTTPException(
@@ -482,16 +605,41 @@ def update_historical_record(
         )
 
     lines = changes.pop("lines", None)
+    old_text = record.extracted_text or ""
+    new_text = changes.get("extracted_text", record.extracted_text) or ""
+    transcription_changed = new_text != old_text
+    old_translation = record.translated_text or ""
+    new_translation = changes.get("translated_text", record.translated_text) or ""
+    translation_changed = new_translation != old_translation
+
+    source_changed = transcription_changed or translation_changed
+    if source_changed:
+        # Preserve the previous evidence before advancing the chat source revision.
+        _save_current_snapshot(db, record, "Before source update")
+        record.transcription_revision += 1
+        if transcription_changed and "translated_text" not in changes:
+            record.translated_text = None
+
     if lines is not None:
-        new_text = changes.get("extracted_text", record.extracted_text) or ""
         if lines and len(lines) != len(new_text.split("\n")):
             raise HTTPException(
                 status_code=422, detail="There must be one box per line of text."
             )
         record.line_data = json.dumps(lines)
+    elif transcription_changed and record.line_data:
+        try:
+            old_lines = json.loads(record.line_data)
+        except json.JSONDecodeError:
+            old_lines = []
+        if old_lines and len(old_lines) != len(new_text.split("\n")):
+            # Old coordinates no longer match line numbers in the edited text.
+            record.line_data = None
 
     for field, value in changes.items():
         setattr(record, field, value)
+
+    if source_changed:
+        _save_current_snapshot(db, record, revision_source)
 
     db.commit()
     db.refresh(record)
@@ -555,7 +703,11 @@ def get_chat_history(record_id: str, db: Session = Depends(get_db)):
     record = db.query(HistoricalRecord).filter(HistoricalRecord.id == record_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Historical record not found")
-    return record.chat_messages
+    return [
+        message
+        for message in record.chat_messages
+        if message.source_revision == record.transcription_revision
+    ]
 
 
 @app.post(
@@ -577,9 +729,12 @@ def post_message(
     if not content:
         raise HTTPException(status_code=400, detail="Message is empty")
 
-    # image_path = next(UPLOAD_DIR.glob(f"{record.id}.*"), None)
+    source_revision = record.transcription_revision
+    image_path = next(UPLOAD_DIR.glob(f"{record.id}.*"), None)
 
-    user_message = ChatMessage(role="user", content=content)
+    user_message = ChatMessage(
+        role="user", content=content, source_revision=source_revision
+    )
     record.chat_messages.append(user_message)
 
     chat_provider = create_chat_provider(chat_message.provider)
@@ -590,14 +745,31 @@ def post_message(
             content=message.content,
         )
         for message in record.chat_messages
+        if message.source_revision == source_revision
     ]
 
     try:
-        assistant_reply = chat_provider.reply(history, record, image_path=None)
+        assistant_reply = chat_provider.reply(history, record, image_path=image_path)
     except (ChatProviderError, RuntimeError) as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
 
-    assistant_message = ChatMessage(role="assistant", content=assistant_reply)
+    latest_revision = (
+        db.query(HistoricalRecord.transcription_revision)
+        .filter(HistoricalRecord.id == record_id)
+        .scalar()
+    )
+    if latest_revision != source_revision:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="The transcription changed while the answer was being prepared. Please ask again.",
+        )
+
+    assistant_message = ChatMessage(
+        role="assistant",
+        content=assistant_reply,
+        source_revision=source_revision,
+    )
 
     record.chat_messages.append(assistant_message)
 

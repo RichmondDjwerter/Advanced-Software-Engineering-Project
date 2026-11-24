@@ -12,7 +12,7 @@ external = false  # data stays on this computer
 title = "Start the local model"
 steps = [
   "Start an OpenAI-compatible model server, e.g. llama-server with Qwen3-VL.",
-  "It must listen on ULTRON_LLM_BASE_URL (default: http://127.0.0.1:8080/v1).",
+  "It must listen on ULTRON_LLM_BASE_URL (default: http://127.0.0.1:9931/v1).",
   "Then check again.",
 ]
 

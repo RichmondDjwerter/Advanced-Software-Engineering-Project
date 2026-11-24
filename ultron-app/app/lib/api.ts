@@ -1,3 +1,5 @@
+import type { OCRLine } from "@/app/types/historicalRecord";
+
 /**
  * API URLs for the application. These constants are used to define the base URLs for the backend API and the Ultron frontend application.
  */
@@ -14,6 +16,9 @@ export async function updateHistoricalRecord(
     name?: string;
     extracted_text?: string;
     translated_text?: string;
+    lines?: OCRLine[];
+    revision_source?: string;
+    expected_text?: string;
   },
 ) {
   const response = await fetch(

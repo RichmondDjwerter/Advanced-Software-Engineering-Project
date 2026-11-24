@@ -12,6 +12,7 @@ type OriginalViewProps = {
   activeLine: number | null;
   onLineHover: (line: number | null) => void;
   selectedLine: number | null;
+  selectionVersion: number;
   onLineClick: (line: number) => void;
 };
 
@@ -21,6 +22,7 @@ export function OriginalView({
   activeLine,
   onLineHover,
   selectedLine,
+  selectionVersion,
   onLineClick,
 }: OriginalViewProps) {
   const { revision } = useRecordRevision();
@@ -72,6 +74,7 @@ export function OriginalView({
             activeLine={activeLine}
             onLineHover={onLineHover}
             selectedLine={selectedLine}
+            selectionVersion={selectionVersion}
             onLineClick={onLineClick}
           />
         </div>

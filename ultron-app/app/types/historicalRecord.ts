@@ -16,6 +16,17 @@ export interface HistoricalRecord {
   image_width?: number | null;
   image_height?: number | null;
   detected_language?: string | null;
+  transcription_revision?: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface TranscriptionSnapshot {
+  revision: number;
+  extracted_text: string;
+  translated_text?: string | null;
+  lines?: OCRLine[];
+  source: string;
+  created_at: string;
+  is_current?: boolean;
 }

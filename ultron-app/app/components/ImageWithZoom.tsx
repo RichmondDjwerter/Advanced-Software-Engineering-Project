@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { CardContent } from "@/components/ui/card";
 import Image from "next/image";
-import { OCRLine } from "@/app/types/historicalRecord";
+import { Maximize2Icon, XIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { OCRLine } from "@/app/types/historicalRecord";
 
 // Props the component gets from outside
 type Props = {
@@ -15,6 +17,7 @@ type Props = {
   activeLine?: number | null;
   onLineHover?: (line: number | null) => void;
   selectedLine?: number | null;
+  selectionVersion?: number;
   onLineClick?: (line: number) => void;
 };
 
@@ -58,6 +61,7 @@ export function ImageWithZoom({
   activeLine,
   onLineHover,
   selectedLine,
+  selectionVersion,
   onLineClick,
 }: Props) {
   const [imageNotFound, setImageNotFound] = useState(false);
@@ -74,7 +78,7 @@ export function ImageWithZoom({
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [selectedLine, imageZoomed, lines]);
+  }, [selectedLine, selectionVersion, imageZoomed, lines]);
 
   function renderImage() {
     return (
@@ -103,8 +107,13 @@ export function ImageWithZoom({
             <span
               key={index}
               data-line-index={index}
-              className={`absolute rounded-sm border-2 transition-colors ${
-                activeLine === index
+              title={`Go to transcription line ${index + 1}`}
+              role="button"
+              tabIndex={0}
+              aria-label={`Go to transcription line ${index + 1}`}
+              aria-pressed={selectedLine === index}
+              className={`absolute cursor-pointer rounded-sm border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral ${
+                activeLine === index || selectedLine === index
                   ? "border-coral bg-coral/25"
                   : "border-transparent hover:border-coral/70 hover:bg-coral/10"
               }`}
@@ -119,7 +128,13 @@ export function ImageWithZoom({
                 event.stopPropagation();
                 onLineClick?.(index);
               }}
-              aria-label={`Line ${index + 1}`}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onLineClick?.(index);
+                }
+              }}
             />
           ))}
         </div>
@@ -129,18 +144,24 @@ export function ImageWithZoom({
 
   return (
     <CardContent>
-      <div className="flex aspect-video items-center justify-center rounded-lg bg-muted text-muted-foreground overflow-auto">
+      <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-muted text-muted-foreground">
         {imageNotFound ? (
           <span>Image not found</span>
         ) : (
-          <button
+          <>{renderImage()}</>
+        )}
+        {!imageNotFound && (
+          <Button
             type="button"
-            className="h-full w-full cursor-zoom-in"
+            variant="secondary"
+            size="icon"
+            className="absolute right-2 top-2 z-10"
             onClick={() => setImageZoomed(true)}
             aria-label={`Zoom in on ${name}`}
+            title="Zoom in"
           >
-            {renderImage()}
-          </button>
+            <Maximize2Icon />
+          </Button>
         )}
       </div>
 
@@ -152,6 +173,17 @@ export function ImageWithZoom({
           aria-label={name}
           onClick={() => setImageZoomed(false)}
         >
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            className="absolute right-4 top-4 z-10"
+            onClick={() => setImageZoomed(false)}
+            aria-label="Close zoomed image"
+            title="Close"
+          >
+            <XIcon />
+          </Button>
           {renderImage()}
         </div>
       )}

@@ -28,6 +28,10 @@ export default function HistoricalRecordClient({
   const [error, setError] = useState("");
   const [activeLine, setActiveLine] = useState<number | null>(null);
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
+  const [selectionVersion, setSelectionVersion] = useState(0);
+  const [documentTab, setDocumentTab] = useState<"transcription" | "translation">(
+    "transcription",
+  );
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -159,6 +163,12 @@ export default function HistoricalRecordClient({
     }
   };
 
+  const selectTranscriptionLine = (line: number) => {
+    setSelectedLine(line);
+    setSelectionVersion((current) => current + 1);
+    setDocumentTab("transcription");
+  };
+
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center">
@@ -252,14 +262,18 @@ export default function HistoricalRecordClient({
             activeLine={activeLine}
             onLineHover={setActiveLine}
             selectedLine={selectedLine}
-            onLineClick={setSelectedLine}
+            selectionVersion={selectionVersion}
+            onLineClick={selectTranscriptionLine}
           />
           <TranslationView
             recordId={id}
+            activeTab={documentTab}
+            onTabChange={setDocumentTab}
             activeLine={activeLine}
             onLineHover={setActiveLine}
             selectedLine={selectedLine}
-            onLineClick={setSelectedLine}
+            selectionVersion={selectionVersion}
+            onLineClick={selectTranscriptionLine}
           />
         </div>
         {chat}

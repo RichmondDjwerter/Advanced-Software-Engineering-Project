@@ -45,6 +45,7 @@ import {
   useTranscriptionComparison,
 } from "@/app/components/TranscriptionComparison";
 import { ProviderSetupDialog } from "@/app/components/ProviderSetupDialog";
+import { useRecordRevision } from "@/app/components/RecordRevision";
 import type {
   ChatMessage,
   ChatProviderInfo,
@@ -163,6 +164,7 @@ export function ChatClient({
   const [setupFor, setSetupFor] = useState<ChatProviderInfo | null>(null);
   const [checking, setChecking] = useState(false);
   const [setupStatus, setSetupStatus] = useState<string | null>(null);
+  const { revision: sourceRevision } = useRecordRevision();
   // increased on cancel, so that a late check cannot select the provider anymore
   const checkId = useRef(0);
   const selected = providers.find((info) => info.name === provider);
@@ -184,6 +186,31 @@ export function ChatClient({
       active = false;
     };
   }, []);
+
+  // A transcription edit starts a fresh chat context. Reload only messages
+  // attached to the current source revision; old replies stay out of view.
+  useEffect(() => {
+    if (sourceRevision === 0) return;
+    const controller = new AbortController();
+    setMessages([]);
+
+    fetch(`/api/historicalRecords/${recordId}/chat`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Could not refresh the chat.");
+        const currentMessages: ChatMessage[] = await response.json();
+        setMessages(currentMessages);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setError("The transcription changed. Start a new message to continue with the current text.");
+        }
+      });
+
+    return () => controller.abort();
+  }, [recordId, sourceRevision]);
 
   /** A provider only becomes active once the backend confirms that it is set up */
   async function selectProvider(name: string) {
@@ -335,6 +362,19 @@ export function ChatClient({
             </select>
           </div>
         </CardHeader>
+        {selected && (
+          <div className="mx-(--card-spacing) rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Sources provided: </span>
+            {selected.name === "local"
+              ? "current TrOCR transcription, machine translation, and manuscript image"
+              : selected.name === "gemini"
+                ? "current TrOCR transcription"
+                : "current document text"}
+            {selected.external
+              ? ". This content is sent to the external provider."
+              : ". This content stays on this computer."}
+          </div>
+        )}
         <div className="flex flex-wrap gap-2 px-(--card-spacing) pt-(--card-spacing)">
           {suggestions.map(({ icon: Icon, label, action }) => {
             const compare = action === "compare";

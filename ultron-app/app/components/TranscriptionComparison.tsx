@@ -93,6 +93,7 @@ export function useTranscriptionComparison(recordId: string) {
           body: JSON.stringify({
             ...merged,
             expected_text: result.current_text,
+            revision_source: `Accepted ${label} comparison`,
           }),
         },
       );

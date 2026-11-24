@@ -9,6 +9,7 @@ import {
   updateHistoricalRecord,
 } from "@/app/lib/api";
 import { EditMode } from "@/app/components/EditMode";
+import { TranscriptionHistory } from "@/app/components/TranscriptionHistory";
 import { useRecordRevision } from "@/app/components/RecordRevision";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
@@ -16,27 +17,33 @@ import type { HistoricalRecord } from "@/app/types/historicalRecord";
 
 type Props = {
   recordId: string;
+  isActive: boolean;
   activeLine: number | null;
   onLineHover: (line: number | null) => void;
   selectedLine: number | null;
+  selectionVersion: number;
   onLineClick: (line: number) => void;
 };
 
 export function TranscriptionView({
   recordId,
+  isActive,
   activeLine,
   onLineHover,
   selectedLine,
+  selectionVersion,
   onLineClick,
 }: Props) {
-  const { revision } = useRecordRevision();
+  const { revision, refresh } = useRecordRevision();
   const [text, setText] = useState("");
   const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
+  const [transcriptionRevision, setTranscriptionRevision] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const lineElements = useRef<(HTMLSpanElement | null)[]>([]);
 
   useEffect(() => {
+    if (!isActive) return;
     const line =
       selectedLine === null ? null : lineElements.current[selectedLine];
     const container = line?.closest<HTMLElement>(
@@ -56,7 +63,7 @@ export function TranscriptionView({
       top: verticalOffset,
       behavior: "smooth",
     });
-  }, [selectedLine, text, loading]);
+  }, [selectedLine, selectionVersion, text, loading, isActive]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -73,6 +80,7 @@ export function TranscriptionView({
         }
 
         const record: HistoricalRecord = await response.json();
+        setTranscriptionRevision(record.transcription_revision ?? 1);
         const transcription =
           typeof record.extracted_text === "string"
             ? record.extracted_text
@@ -136,14 +144,19 @@ export function TranscriptionView({
         text={text}
         emptyMessage="No text was recognized in this image."
         onSave={async (edited) => {
-          await updateHistoricalRecord(recordId, { extracted_text: edited });
+          await updateHistoricalRecord(recordId, {
+            extracted_text: edited,
+            revision_source: "Manual edit",
+          });
           setText(edited);
+          refresh();
 
           // The translation follows the transcription.
           try {
             setDetectedLanguage(
               await translateHistoricalRecord(recordId, edited),
             );
+            refresh();
           } catch (err) {
             console.error(err);
             toast.add({
@@ -155,14 +168,42 @@ export function TranscriptionView({
           }
         }}
         actions={
-          <span
-            className="ml-auto rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground"
-            aria-live="polite"
-          >
-            {detectedLanguage
-              ? `Detected: ${detectedLanguage}`
-              : "Language not detected"}
-          </span>
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            <TranscriptionHistory
+              recordId={recordId}
+              currentRevision={transcriptionRevision}
+              onRestore={async (snapshot) => {
+                await updateHistoricalRecord(recordId, {
+                  extracted_text: snapshot.extracted_text,
+                  lines: snapshot.lines ?? [],
+                  revision_source: `Restored version ${snapshot.revision}`,
+                });
+                setText(snapshot.extracted_text);
+                refresh();
+                try {
+                  setDetectedLanguage(
+                    await translateHistoricalRecord(recordId, snapshot.extracted_text),
+                  );
+                  refresh();
+                } catch (err) {
+                  console.error(err);
+                  toast.add({
+                    title: "Translation not updated",
+                    description: "The transcription was restored, but its translation could not be refreshed.",
+                    type: "error",
+                  });
+                }
+              }}
+            />
+            <span
+              className="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground"
+              aria-live="polite"
+            >
+              {detectedLanguage
+                ? `Detected: ${detectedLanguage}`
+                : "Language not detected"}
+            </span>
+          </div>
         }
         renderText={() =>
           text.split(/\r?\n/).map((line, index) => (
@@ -171,12 +212,24 @@ export function TranscriptionView({
               ref={(element) => {
                 lineElements.current[index] = element;
               }}
-              className={`block rounded-sm transition-colors hover:bg-coral/20 ${
-                activeLine === index ? "bg-coral/20" : ""
+              role="button"
+              tabIndex={0}
+              aria-label={`Scroll to line ${index + 1} in the manuscript image`}
+              aria-pressed={selectedLine === index}
+              className={`block cursor-pointer rounded-sm transition-colors hover:bg-coral/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral ${
+                activeLine === index || selectedLine === index
+                  ? "bg-coral/20 outline outline-1 outline-coral/50"
+                  : ""
               }`}
               onMouseEnter={() => onLineHover(index)}
               onMouseLeave={() => onLineHover(null)}
               onClick={() => onLineClick(index)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onLineClick(index);
+                }
+              }}
             >
               {line || " "}
             </span>
