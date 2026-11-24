@@ -366,7 +366,11 @@ async def translate_historical_record(
         if payload is not None and payload.text is not None
         else record.extracted_text or ""
     )
-    if payload is not None and payload.text is not None and payload.text != (record.extracted_text or ""):
+    if (
+        payload is not None
+        and payload.text is not None
+        and payload.text != (record.extracted_text or "")
+    ):
         raise HTTPException(
             status_code=409,
             detail="The transcription changed before translation finished. Try again with the current text.",
