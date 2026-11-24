@@ -205,7 +205,9 @@ export function ChatClient({
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setError("The transcription changed. Start a new message to continue with the current text.");
+          setError(
+            "The transcription changed. Start a new message to continue with the current text.",
+          );
         }
       });
 
@@ -364,7 +366,9 @@ export function ChatClient({
         </CardHeader>
         {selected && (
           <div className="mx-(--card-spacing) rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Sources provided: </span>
+            <span className="font-medium text-foreground">
+              Sources provided:{" "}
+            </span>
             {selected.name === "local"
               ? "current TrOCR transcription, machine translation, and manuscript image"
               : selected.name === "gemini"

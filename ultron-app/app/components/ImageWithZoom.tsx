@@ -145,11 +145,7 @@ export function ImageWithZoom({
   return (
     <CardContent>
       <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-muted text-muted-foreground">
-        {imageNotFound ? (
-          <span>Image not found</span>
-        ) : (
-          <>{renderImage()}</>
-        )}
+        {imageNotFound ? <span>Image not found</span> : <>{renderImage()}</>}
         {!imageNotFound && (
           <Button
             type="button"

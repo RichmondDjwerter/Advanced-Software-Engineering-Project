@@ -182,14 +182,18 @@ export function TranscriptionView({
                 refresh();
                 try {
                   setDetectedLanguage(
-                    await translateHistoricalRecord(recordId, snapshot.extracted_text),
+                    await translateHistoricalRecord(
+                      recordId,
+                      snapshot.extracted_text,
+                    ),
                   );
                   refresh();
                 } catch (err) {
                   console.error(err);
                   toast.add({
                     title: "Translation not updated",
-                    description: "The transcription was restored, but its translation could not be refreshed.",
+                    description:
+                      "The transcription was restored, but its translation could not be refreshed.",
                     type: "error",
                   });
                 }

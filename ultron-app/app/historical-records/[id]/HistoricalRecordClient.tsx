@@ -29,9 +29,9 @@ export default function HistoricalRecordClient({
   const [activeLine, setActiveLine] = useState<number | null>(null);
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
   const [selectionVersion, setSelectionVersion] = useState(0);
-  const [documentTab, setDocumentTab] = useState<"transcription" | "translation">(
-    "transcription",
-  );
+  const [documentTab, setDocumentTab] = useState<
+    "transcription" | "translation"
+  >("transcription");
 
   const inputRef = useRef<HTMLInputElement>(null);
 

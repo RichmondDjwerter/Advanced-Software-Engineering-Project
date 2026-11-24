@@ -40,13 +40,16 @@ export function TranscriptionHistory({
       { signal: controller.signal, cache: "no-store" },
     )
       .then(async (response) => {
-        if (!response.ok) throw new Error("Could not load transcription history.");
+        if (!response.ok)
+          throw new Error("Could not load transcription history.");
         const data: TranscriptionSnapshot[] = await response.json();
         setVersions(data);
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setError("Could not load transcription history. Check that the backend is running.");
+          setError(
+            "Could not load transcription history. Check that the backend is running.",
+          );
         }
       })
       .finally(() => {
@@ -80,12 +83,15 @@ export function TranscriptionHistory({
           <DialogHeader>
             <DialogTitle>Transcription history</DialogTitle>
             <DialogDescription>
-              Earlier versions stay available. Restoring one creates a new current version.
+              Earlier versions stay available. Restoring one creates a new
+              current version.
             </DialogDescription>
           </DialogHeader>
 
           <div className="min-h-0 flex-1 space-y-3 overflow-auto">
-            {loading && <p className="text-muted-foreground">Loading versions…</p>}
+            {loading && (
+              <p className="text-muted-foreground">Loading versions…</p>
+            )}
             {!loading && versions.length === 0 && (
               <p className="text-muted-foreground">No saved versions yet.</p>
             )}
@@ -93,7 +99,10 @@ export function TranscriptionHistory({
               const isCurrent =
                 version.is_current ?? version.revision === currentRevision;
               return (
-                <section key={version.revision} className="rounded-lg border p-3">
+                <section
+                  key={version.revision}
+                  className="rounded-lg border p-3"
+                >
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-medium">Version {version.revision}</h3>
                     {isCurrent && (
@@ -102,7 +111,8 @@ export function TranscriptionHistory({
                       </span>
                     )}
                     <span className="text-sm text-muted-foreground">
-                      {version.source} · {new Date(version.created_at).toLocaleString()}
+                      {version.source} ·{" "}
+                      {new Date(version.created_at).toLocaleString()}
                     </span>
                   </div>
                   <pre className="mt-3 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/50 p-3 font-sans text-base leading-7">
@@ -126,7 +136,9 @@ export function TranscriptionHistory({
                       onClick={() => void restore(version)}
                     >
                       <RotateCcwIcon data-icon="inline-start" />
-                      {restoring === version.revision ? "Restoring…" : "Restore this version"}
+                      {restoring === version.revision
+                        ? "Restoring…"
+                        : "Restore this version"}
                     </Button>
                   )}
                 </section>
@@ -134,9 +146,17 @@ export function TranscriptionHistory({
             })}
           </div>
 
-          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={restoring !== null}>
+            <Button
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={restoring !== null}
+            >
               Close
             </Button>
           </DialogFooter>
