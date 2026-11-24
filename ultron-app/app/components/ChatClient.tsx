@@ -154,7 +154,13 @@ export function ChatClient({
   recordId: string;
   initialMessages?: ChatMessage[];
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const { revision: sourceRevision } = useRecordRevision();
+  const [chatState, setChatState] = useState({
+    revision: sourceRevision,
+    messages: initialMessages,
+  });
+  const messages =
+    chatState.revision === sourceRevision ? chatState.messages : [];
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -164,7 +170,6 @@ export function ChatClient({
   const [setupFor, setSetupFor] = useState<ChatProviderInfo | null>(null);
   const [checking, setChecking] = useState(false);
   const [setupStatus, setSetupStatus] = useState<string | null>(null);
-  const { revision: sourceRevision } = useRecordRevision();
   // increased on cancel, so that a late check cannot select the provider anymore
   const checkId = useRef(0);
   const selected = providers.find((info) => info.name === provider);
@@ -192,7 +197,6 @@ export function ChatClient({
   useEffect(() => {
     if (sourceRevision === 0) return;
     const controller = new AbortController();
-    setMessages([]);
 
     fetch(`/api/historicalRecords/${recordId}/chat`, {
       cache: "no-store",
@@ -201,13 +205,13 @@ export function ChatClient({
       .then(async (response) => {
         if (!response.ok) throw new Error("Could not refresh the chat.");
         const currentMessages: ChatMessage[] = await response.json();
-        setMessages(currentMessages);
+        if (!controller.signal.aborted) {
+          setChatState({ revision: sourceRevision, messages: currentMessages });
+        }
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setError(
-            "The transcription changed. Start a new message to continue with the current text.",
-          );
+          setError("The transcription changed. Start a new message to continue with the current text.");
         }
       });
 
@@ -263,7 +267,13 @@ export function ChatClient({
       content,
       created_at: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, tempMessage]);
+    setChatState((current) => ({
+      revision: sourceRevision,
+      messages: [
+        ...(current.revision === sourceRevision ? current.messages : []),
+        tempMessage,
+      ],
+    }));
     setError(null);
     setPending(true);
 
@@ -283,10 +293,16 @@ export function ChatClient({
       }
 
       const saved: ChatMessage[] = await res.json();
-      setMessages((prev) => [
-        ...prev.filter((m) => m.id !== tempMessage.id),
-        ...saved,
-      ]);
+      setChatState((current) => {
+        if (current.revision !== sourceRevision) return current;
+        return {
+          ...current,
+          messages: [
+            ...current.messages.filter((m) => m.id !== tempMessage.id),
+            ...saved,
+          ],
+        };
+      });
     } catch {
       setError("The chat is currently unavailable.");
     } finally {
@@ -366,9 +382,7 @@ export function ChatClient({
         </CardHeader>
         {selected && (
           <div className="mx-(--card-spacing) rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">
-              Sources provided:{" "}
-            </span>
+            <span className="font-medium text-foreground">Sources provided: </span>
             {selected.name === "local"
               ? "current TrOCR transcription, machine translation, and manuscript image"
               : selected.name === "gemini"
