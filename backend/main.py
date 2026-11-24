@@ -34,9 +34,7 @@ Base.metadata.create_all(bind=engine)
 
 def migrate_historical_record_columns(database_engine: Engine = engine) -> None:
     inspector = inspect(database_engine)
-    columns = {
-        column["name"] for column in inspector.get_columns("historical_records")
-    }
+    columns = {column["name"] for column in inspector.get_columns("historical_records")}
     has_chat_messages_table = inspector.has_table("chat_messages")
     chat_columns = (
         {column["name"] for column in inspector.get_columns("chat_messages")}
@@ -368,7 +366,11 @@ async def translate_historical_record(
         if payload is not None and payload.text is not None
         else record.extracted_text or ""
     )
-    if payload is not None and payload.text is not None and payload.text != (record.extracted_text or ""):
+    if (
+        payload is not None
+        and payload.text is not None
+        and payload.text != (record.extracted_text or "")
+    ):
         raise HTTPException(
             status_code=409,
             detail="The transcription changed before translation finished. Try again with the current text.",
