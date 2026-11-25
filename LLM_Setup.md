@@ -48,7 +48,7 @@ After installation, open a new terminal and check that llama is available:
 
 In its own terminal, run:
 
-    llama serve -hf Qwen/Qwen3-VL-4B-Instruct-GGUF:Q4_K_M --port 9931 --image-min-tokens 1024
+    llama serve -hf Qwen/Qwen3-VL-4B-Instruct-GGUF:Q4_K_M --port 8080 --image-min-tokens 1024
 
 The first start downloads the model and its multimodal image component. Leave this terminal running while using local chat or Compare transcription. The backend checks the server at http://127.0.0.1:9931/v1.
 
