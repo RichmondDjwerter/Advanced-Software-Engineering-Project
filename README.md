@@ -3,7 +3,7 @@
 ## Description
 Ultron is a project developed as part of the Advanced Software Engineering course.
 
-For a detailed description of the project, its objectives, and features, please refer to project_description.md.
+For a detailed description of the project, its objectives, and features, please refer to [project_description.md](project_description.md)
 
 ## Technology stack
 
